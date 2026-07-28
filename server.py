@@ -241,11 +241,6 @@ def download_agent():
     return FileResponse(agent_path, media_type="text/plain", filename="agent.py")
 
 
-@app.get("/api/debug-headers")
-def debug_headers(request: Request):
-    return dict(request.headers)
-
-
 @app.get("/api/agent/download/config.json")
 def download_config(request: Request):
     # Retorna o config pre-configurado com a URL deste servidor
