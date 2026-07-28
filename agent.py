@@ -426,15 +426,19 @@ def collect_health():
         vm = _safe(psutil.virtual_memory)
         if vm:
             h["memory_percent"] = vm.percent
-        batt = _safe(psutil.sensors_battery)
-        if batt:
-            h["battery_percent"] = batt.percent
-            h["battery_plugged"] = batt.power_plugged
-        temps = _safe(psutil.sensors_temperatures)
-        if temps:
-            flat = [t.current for arr in temps.values() for t in arr if t.current]
-            if flat:
-                h["temp_max_c"] = max(flat)
+        
+        if hasattr(psutil, "sensors_battery"):
+            batt = _safe(psutil.sensors_battery)
+            if batt:
+                h["battery_percent"] = batt.percent
+                h["battery_plugged"] = batt.power_plugged
+                
+        if hasattr(psutil, "sensors_temperatures"):
+            temps = _safe(psutil.sensors_temperatures)
+            if temps:
+                flat = [t.current for arr in temps.values() for t in arr if t.current]
+                if flat:
+                    h["temp_max_c"] = max(flat)
     # pior uso de disco entre as particoes fixas
     disks = [d["percent"] for d in collect_storage_usage()
              if not d.get("removable")]
