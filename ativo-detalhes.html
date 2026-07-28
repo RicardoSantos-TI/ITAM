@@ -190,6 +190,20 @@ body{background:var(--paper);color:var(--text-1);font-family:var(--sans);font-si
 .disk-top{display:flex;justify-content:space-between;align-items:baseline;gap:.75rem;margin-bottom:.45rem}
 .disk-name{font-size:.82rem;font-weight:700;color:var(--text-1)}
 .disk-meta{font-family:var(--mono);font-size:.7rem;color:var(--text-3);white-space:nowrap}
+.disk-track{height:6px;background:var(--border-light);border-radius:3px;overflow:hidden}
+.disk-fill{height:100%;border-radius:3px;transition:width .6s ease}
+.disk-foot{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.68rem;color:var(--text-3);margin-top:.35rem}
+
+/* ── Gráfico de histórico ───────────────────────────────────── */
+.chart-wrap{width:100%}
+.chart-legend{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:.6rem}
+.chart-legend span{display:inline-flex;align-items:center;gap:.4rem;font-size:.72rem;font-weight:600;color:var(--text-2)}
+.chart-legend i{width:14px;height:3px;border-radius:2px;display:inline-block}
+.chart-svg{width:100%;height:auto;display:block}
+
+/* ── Impressoras / badges ───────────────────────────────────── */
+.dev-badges{display:inline-flex;gap:.3rem;margin-left:.4rem;vertical-align:middle}
+.dev-badge{display:inline-flex;align-items:center;padding:.1rem .45rem;border-radius:99px;font-size:.62rem;font-weight:700;background:var(--brand-light);border:1px solid var(--brand-border);color:var(--brand)}
 
 /* ── Loading / erro ─────────────────────────────────────────── */
 .loading-state{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:55vh;gap:1rem;color:var(--text-3);grid-column:1/-1}
@@ -271,6 +285,12 @@ body{background:var(--paper);color:var(--text-1);font-family:var(--sans);font-si
     if(v>=75)return 'warn';
     return 'ok';
   };
+  var gc=function(v){
+    if(v==null)return 'var(--text-dis)';
+    if(v>=90)return 'var(--crit)';
+    if(v>=75)return 'var(--warn)';
+    return 'var(--ok)';
+  };
   var ago=function(iso){
     if(!iso)return '—';
     var s=(Date.now()-new Date(iso))/1000;
@@ -299,7 +319,10 @@ body{background:var(--paper);color:var(--text-1);font-family:var(--sans);font-si
     tag:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2H2v10l9.3 9.3a2 2 0 0 0 2.8 0l7.2-7.2a2 2 0 0 0 0-2.8Z"/><path d="M7 7h.01"/></svg>',
     globe:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10Z"/></svg>',
     hd:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><line x1="22" y1="12" x2="2" y2="12"/><path d="M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1Z"/><path d="M6 16h.01M10 16h.01"/></svg>',
-    search:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>'
+    search:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>',
+    printer:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>',
+    patch:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/></svg>',
+    pulse:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>'
   };
 
   var STATUS_LABEL={ok:'Operacional',atencao:'Atenção',critico:'Crítico',offline:'Offline'};
@@ -366,6 +389,82 @@ body{background:var(--paper);color:var(--text-1);font-family:var(--sans);font-si
     }
   };
 
+  /* Complementa dados demo com o que o agente real coleta:
+     storage (partições), printers, patches e histórico de saúde. */
+  function demoExtras(a){
+    var h=a.health||{};
+    if(!a.storage){
+      a.storage=[
+        {device:'C:',mountpoint:'C:\\',fstype:'NTFS',total_bytes:511000000000,used_bytes:Math.round(511000000000*(h.disk_worst_percent||50)/100),percent:h.disk_worst_percent||50,removable:false}
+      ];
+      if(a.hardware&&a.hardware.disks&&a.hardware.disks.length>1){
+        a.storage.push({device:'D:',mountpoint:'D:\\',fstype:'NTFS',total_bytes:1000000000000,used_bytes:310000000000,percent:31,removable:false});
+      }
+    }
+    if(!a.devices)a.devices={};
+    if(!a.devices.printers){
+      a.devices.printers=[{name:'HP LaserJet Pro M404',port:'IP_192.168.1.230',default:true,network:true}];
+    }
+    if(!a.patches){
+      a.patches=[
+        {id:'KB5039212',description:'Security Update',installed_on:'6/12/2026'},
+        {id:'KB5037771',description:'Update',installed_on:'5/15/2026'},
+        {id:'KB5036893',description:'Security Update',installed_on:'4/10/2026'}
+      ];
+    }
+    if(!a.history){
+      var hist=[],n=30,now=Date.now();
+      var c=h.cpu_percent||35,m=h.memory_percent||50,d=h.disk_worst_percent||45;
+      for(var i=n-1;i>=0;i--){
+        var jit=function(base){return Math.max(2,Math.min(99,base+(Math.sin(i*1.7)*8)+(Math.random()*10-5)));};
+        hist.push({ts:new Date(now-i*15000).toISOString(),cpu:jit(c),memory:jit(m),disk:Math.max(2,Math.min(99,d+(Math.random()*2-1)))});
+      }
+      a.history=hist;
+    }
+    return a;
+  }
+
+  /* ── Gráfico de histórico (SVG inline, sem libs) ─────────── */
+  function historyChart(hist){
+    var pts=(hist||[]).filter(function(p){return p.cpu!=null||p.memory!=null||p.disk!=null;});
+    if(pts.length<2)return '';
+    var W=640,H=160,PL=34,PR=8,PT=10,PB=22;
+    var iw=W-PL-PR,ih=H-PT-PB;
+    var x=function(i){return PL+iw*(i/(pts.length-1));};
+    var y=function(v){return PT+ih*(1-Math.max(0,Math.min(100,v))/100);};
+    function line(key){
+      var d='';
+      pts.forEach(function(p,i){
+        if(p[key]==null)return;
+        d+=(d?' L':'M')+x(i).toFixed(1)+' '+y(p[key]).toFixed(1);
+      });
+      return d;
+    }
+    var grid='';
+    [0,25,50,75,100].forEach(function(v){
+      grid+='<line x1="'+PL+'" y1="'+y(v)+'" x2="'+(W-PR)+'" y2="'+y(v)+'" stroke="var(--border-light)" stroke-width="1"/>'
+        +'<text x="'+(PL-6)+'" y="'+(y(v)+3)+'" text-anchor="end" font-size="9" fill="var(--text-3)" font-family="var(--mono)">'+v+'</text>';
+    });
+    var t0=new Date(pts[0].ts),t1=new Date(pts[pts.length-1].ts);
+    var fmt=function(t){return t.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});};
+    var SERIES={cpu:'#1c62cb',memory:'#0e9488',disk:'#7a5af8'};
+    return '<div class="chart-wrap">'
+      +'<div class="chart-legend">'
+      +'<span><i style="background:'+SERIES.cpu+'"></i>CPU</span>'
+      +'<span><i style="background:'+SERIES.memory+'"></i>Memória</span>'
+      +'<span><i style="background:'+SERIES.disk+'"></i>Disco</span>'
+      +'</div>'
+      +'<svg class="chart-svg" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Histórico de uso de CPU, memória e disco">'
+      +grid
+      +'<path d="'+line('disk')+'" fill="none" stroke="'+SERIES.disk+'" stroke-width="1.5" stroke-linejoin="round"/>'
+      +'<path d="'+line('memory')+'" fill="none" stroke="'+SERIES.memory+'" stroke-width="1.5" stroke-linejoin="round"/>'
+      +'<path d="'+line('cpu')+'" fill="none" stroke="'+SERIES.cpu+'" stroke-width="2" stroke-linejoin="round"/>'
+      +'<text x="'+PL+'" y="'+(H-6)+'" font-size="9" fill="var(--text-3)" font-family="var(--mono)">'+fmt(t0)+'</text>'
+      +'<text x="'+(W-PR)+'" y="'+(H-6)+'" text-anchor="end" font-size="9" fill="var(--text-3)" font-family="var(--mono)">'+fmt(t1)+'</text>'
+      +'</svg>'
+      +'</div>';
+  }
+
   /* ── Render ──────────────────────────────────────────────── */
   function renderPage(a){
     var sys=a.system||{}, hw=a.hardware||{}, dev=a.devices||{},
@@ -379,11 +478,13 @@ body{background:var(--paper);color:var(--text-1);font-family:var(--sans);font-si
     var diskVal=health.disk_worst_percent!=null?health.disk_worst_percent:(a.disk!=null?a.disk:null);
     var st=a.status||'ok';
     var uptime=fmtUptime(sys.uptime_seconds);
+    /* os_caption só existe no Windows (WMI); em Linux/macOS cai para os_full ou nome+release */
+    var osLabel=sys.os_caption||sys.os_full||[sys.os_name,sys.os_release].filter(Boolean).join(' ')||null;
 
     /* ── Cabeçalho do ativo ── */
     var chips='';
     if(a.tags&&a.tags.setor) chips+='<span class="meta-chip"><b>Setor</b><span class="v">'+esc(a.tags.setor)+'</span></span>';
-    if(sys.os_caption) chips+='<span class="meta-chip"><b>Sistema</b><span class="v">'+esc(sys.os_caption)+'</span></span>';
+    if(osLabel) chips+='<span class="meta-chip"><b>Sistema</b><span class="v">'+esc(osLabel)+'</span></span>';
     if(sys.logged_user) chips+='<span class="meta-chip"><b>Usuário</b><span class="v">'+esc(sys.logged_user)+'</span></span>';
     if(uptime) chips+='<span class="meta-chip"><b>Uptime</b><span class="v">'+esc(uptime)+'</span></span>';
     chips+='<span class="meta-chip"><b>Visto</b><span class="v">'+esc(ago(a.last_seen))+'</span></span>';
@@ -431,31 +532,81 @@ body{background:var(--paper);color:var(--text-1);font-family:var(--sans);font-si
     }).join('');
     remHTML=remHTML?'<div class="dev-list">'+remHTML+'</div>':'';
 
-    /* ── Discos ── */
+    /* ── Impressoras (coletadas no Windows via Win32_Printer) ── */
+    var prnHTML=(dev.printers||[]).map(function(p){
+      var badges='';
+      if(p.default) badges+='<span class="dev-badge">Padrão</span>';
+      if(p.network) badges+='<span class="dev-badge">Rede</span>';
+      return '<div class="dev-item"><strong>'+esc(p.name||'Impressora')
+        +(badges?'<span class="dev-badges">'+badges+'</span>':'')+'</strong>'
+        +(p.port?'<span>Porta '+esc(p.port)+'</span>':'')+'</div>';
+    }).join('');
+    prnHTML=prnHTML?'<div class="dev-list">'+prnHTML+'</div>':'';
+
+    /* ── Partições com uso real (payload.storage, multiplataforma) ── */
+    var storage=(a.storage||[]).filter(function(p){return !p.removable;});
+    var storageHTML=storage.map(function(p){
+      var pct=p.percent!=null?Math.min(100,p.percent):null;
+      return '<div class="disk-item">'
+        +'<div class="disk-top"><span class="disk-name">'+esc(p.mountpoint||p.device||'Partição')+'</span>'
+        +'<span class="disk-meta">'+esc(p.fstype||'')+(pct!=null?' · '+Math.round(pct)+'%':'')+'</span></div>'
+        +(pct!=null?'<div class="disk-track"><div class="disk-fill" style="width:'+pct+'%;background:'+gc(pct)+'"></div></div>':'')
+        +((p.used_bytes&&p.total_bytes)?'<div class="disk-foot"><span>'+fmtBytes(p.used_bytes)+' usados</span><span>'+fmtBytes(p.total_bytes)+' total</span></div>':'')
+        +'</div>';
+    }).join('');
+
+    /* ── Discos físicos (WMI, apenas Windows) ── */
     var disksHTML=(hw.disks||[]).map(function(dk){
       return '<div class="disk-item">'
         +'<div class="disk-top"><span class="disk-name">'+esc(dk.model||'Disco')+'</span>'
         +'<span class="disk-meta">'+esc(dk.interface||'')+(dk.size_bytes?' · '+fmtBytes(dk.size_bytes):'')+'</span></div>'
         +'</div>';
-    }).join('')||'<p class="empty-text">Sem informações de disco.</p>';
+    }).join('');
+    var hasStorageInfo=storageHTML||disksHTML;
 
-    /* ── Rede ── */
-    var netHTML=(net.interfaces||[]).filter(function(i){return i.ipv4&&i.ipv4.length;}).map(function(i){
-      var pills=i.ipv4.map(function(ip){return '<span class="net-pill ip">'+esc(ip)+'</span>';}).join('');
+    /* ── Patches do Windows (Win32_QuickFixEngineering) ── */
+    var patches=a.patches||[];
+    var patchHTML=patches.length?'<table class="sw-table">'
+      +'<thead><tr><th>KB</th><th>Descrição</th><th>Instalado em</th></tr></thead><tbody>'
+      +patches.map(function(p){
+        return '<tr><td style="font-family:var(--mono);font-size:.72rem">'+esc(p.id||'—')+'</td><td>'+esc(p.description||'—')+'</td><td>'+esc(p.installed_on||'')+'</td></tr>';
+      }).join('')
+      +'</tbody></table>':'';
+
+    /* ── Rede (ignora loopback) ── */
+    var netHTML=(net.interfaces||[]).map(function(i){
+      var ips=(i.ipv4||[]).filter(function(ip){return ip.indexOf('127.')!==0;});
+      return {name:i.name,ips:ips,mac:i.mac};
+    }).filter(function(i){return i.ips.length;}).map(function(i){
+      var pills=i.ips.map(function(ip){return '<span class="net-pill ip">'+esc(ip)+'</span>';}).join('');
       if(i.mac) pills+='<span class="net-pill mac">'+esc(i.mac)+'</span>';
       return '<div class="net-item"><div class="net-name">'+esc(i.name)+'</div><div class="net-pills">'+pills+'</div></div>';
     }).join('')||'<p class="empty-text">Sem interfaces de rede.</p>';
+
+    /* ── Bateria (notebooks) ── */
+    var batteryKPI='';
+    if(health.battery_percent!=null){
+      batteryKPI='<div class="kpi-card '+(health.battery_percent<20&&!health.battery_plugged?'crit':'')+'">'
+        +'<div class="kpi-label">Bateria</div>'
+        +'<div class="kpi-val">'+Math.round(health.battery_percent)+'%</div>'
+        +'<div class="kpi-sub">'+(health.battery_plugged?'na tomada':'na bateria')+'</div>'
+      +'</div>';
+    }
+
+    /* ── Histórico de desempenho (payload.history do servidor) ── */
+    var chartHTML=historyChart(a.history);
 
     /* ── Software (com filtro) ── */
     var swId='sw-list-'+Date.now();
     var swSearchId='sw-search-'+Date.now();
     var swCountId='sw-count-'+Date.now();
+    var swHasPublisher=sw.some(function(s){return s.publisher;});
     var swHTML='<div class="sw-search-wrap">'
       +IC.search
       +'<input class="sw-search" id="'+swSearchId+'" placeholder="Filtrar por nome do programa..." autocomplete="off">'
       +'</div>'
       +'<table class="sw-table">'
-      +'<thead><tr><th>Nome</th><th>Versão</th></tr></thead>'
+      +'<thead><tr><th>Nome</th>'+(swHasPublisher?'<th style="text-align:left">Fornecedor</th>':'')+'<th>Versão</th></tr></thead>'
       +'<tbody id="'+swId+'"></tbody>'
       +'</table>'
       +'<div class="sw-count" id="'+swCountId+'">'+sw.length+' programas</div>';
@@ -517,7 +668,12 @@ body{background:var(--paper);color:var(--text-1);font-family:var(--sans);font-si
         +'<div class="kpi-val">'+(health.temp_max_c?health.temp_max_c+'°C':'—')+'</div>'
         +'<div class="kpi-sub">máxima registrada</div>'
       +'</div>'
+      +batteryKPI
       +'</div>'
+      +(chartHTML?'<div class="sec-card">'
+      +'<div class="sec-head">'+IC.pulse+'<span class="sec-title">Histórico de desempenho</span><span class="sec-count">'+(a.history||[]).length+'</span></div>'
+      +'<div class="sec-body">'+chartHTML+'</div>'
+      +'</div>':'')
       +'<div class="sec-card">'
       +'<div class="sec-head">'+IC.shield+'<span class="sec-title">Antivírus</span></div>'
       +'<div class="sec-body">'+avHTML+'</div>'
@@ -537,8 +693,12 @@ body{background:var(--paper);color:var(--text-1);font-family:var(--sans);font-si
       +'</dl></div>'
       +'</div>'
       +'<div class="sec-card">'
-      +'<div class="sec-head">'+IC.hd+'<span class="sec-title">Armazenamento</span><span class="sec-count">'+((hw.disks||[]).length)+'</span></div>'
-      +'<div class="sec-body">'+disksHTML+'</div>'
+      +'<div class="sec-head">'+IC.hd+'<span class="sec-title">Armazenamento</span><span class="sec-count">'+(storage.length||(hw.disks||[]).length)+'</span></div>'
+      +'<div class="sec-body">'
+      +(storageHTML?'<p class="sub-label">Partições</p>'+storageHTML:'')
+      +(disksHTML?'<p class="sub-label">Discos físicos</p>'+disksHTML:'')
+      +(hasStorageInfo?'':'<p class="empty-text">Sem informações de disco.</p>')
+      +'</div>'
       +'</div>'
       +'</div>'
 
@@ -551,6 +711,7 @@ body{background:var(--paper);color:var(--text-1);font-family:var(--sans);font-si
       +usbHTML
       +'<p class="sub-label">Monitores</p>'
       +monHTML
+      +(prnHTML?'<p class="sub-label">Impressoras</p>'+prnHTML:'')
       +(remHTML?'<p class="sub-label">Drives removíveis</p>'+remHTML:'')
       +'<p class="sub-label">Interfaces de rede</p>'
       +netHTML
@@ -564,6 +725,10 @@ body{background:var(--paper);color:var(--text-1);font-family:var(--sans);font-si
       +'<div class="sec-head">'+IC.box+'<span class="sec-title">Software instalado</span><span class="sec-count">'+sw.length+'</span></div>'
       +'<div class="sec-body">'+swHTML+'</div>'
       +'</div>'
+      +(patchHTML?'<div class="sec-card">'
+      +'<div class="sec-head">'+IC.patch+'<span class="sec-title">Atualizações do Windows</span><span class="sec-count">'+patches.length+'</span></div>'
+      +'<div class="sec-body">'+patchHTML+'</div>'
+      +'</div>':'')
       +'</div>';
 
     /* ── Render ── */
@@ -591,7 +756,9 @@ body{background:var(--paper);color:var(--text-1);font-family:var(--sans);font-si
     var countEl=qs('#'+swCountId);
     function renderSW(list){
       tbody.innerHTML=list.map(function(s){
-        return '<tr><td>'+esc(s.name||'—')+'</td><td>'+esc(s.version||'')+'</td></tr>';
+        return '<tr><td>'+esc(s.name||'—')+'</td>'
+          +(swHasPublisher?'<td style="color:var(--text-3);text-align:left;font-family:var(--sans);font-size:.78rem">'+esc(s.publisher||'')+'</td>':'')
+          +'<td>'+esc(s.version||'')+'</td></tr>';
       }).join('');
       countEl.textContent=list.length+' / '+swData.length+' programas';
     }
@@ -614,7 +781,7 @@ body{background:var(--paper);color:var(--text-1);font-family:var(--sans);font-si
       .catch(function(){
         /* fallback demo */
         var demo=DEMO[assetId];
-        if(demo){renderPage(demo);}
+        if(demo){renderPage(demoExtras(demo));}
         else{
           var now=Date.now();
           var generic={
@@ -628,7 +795,7 @@ body{background:var(--paper);color:var(--text-1);font-family:var(--sans);font-si
             devices:{usb:[],monitors:[],removable_drives:[]},
             software:[{name:'Microsoft 365',version:'16.0'},{name:'Google Chrome',version:'126.0'}]
           };
-          renderPage(generic);
+          renderPage(demoExtras(generic));
         }
       });
   }
