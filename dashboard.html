@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Console de Ativos · ITAM Martinelli</title>
-<meta name="description" content="Console de inventário e saúde de ativos de TI da Martinelli.">
+<title>Console de Ativos · ITAM Inventar.IO</title>
+<meta name="description" content="Console de inventário e saúde de ativos de TI da Inventar.IO.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
@@ -32,18 +32,18 @@
   :focus-visible{outline:2px solid var(--brand);outline-offset:2px}
   .mono{font-family:var(--mono)}
 
-  /* ── App bar ────────────────────────────────────────────── */
-  .appbar{background:var(--ink);color:#e8ecf3;position:sticky;top:0;z-index:50;border-bottom:1px solid var(--ink-line)}
-  .appbar-inner{max-width:1280px;margin:0 auto;padding:0 2rem;height:56px;display:flex;align-items:center;gap:1.75rem}
+  /* ── App bar Premium ─────────────────────────────────────────── */
+  .appbar{background:rgba(14,23,38,0.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);color:#e8ecf3;position:sticky;top:0;z-index:50;border-bottom:1px solid rgba(255,255,255,0.08);box-shadow:0 4px 20px rgba(0,0,0,0.08)}
+  .appbar-inner{max-width:1280px;margin:0 auto;padding:0 2rem;height:60px;display:flex;align-items:center;gap:2rem}
   @media(max-width:768px){.appbar-inner{padding:0 1rem;gap:1rem}}
   .brand{display:flex;align-items:center;gap:.65rem;text-decoration:none;color:inherit}
-  .brand-icon{width:30px;height:30px;background:var(--brand);border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.95rem;font-weight:800;flex:none}
+  .brand-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--brand),#4f46e5);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:1rem;font-weight:800;box-shadow:0 0 12px rgba(28,98,203,0.45);flex:none}
   .brand-name{font-size:.9rem;font-weight:700;letter-spacing:.01em}
   .brand-name small{display:block;font-size:.64rem;font-weight:600;color:#8b97ab;text-transform:uppercase;letter-spacing:.09em;line-height:1.1}
   .appbar-nav{display:flex;gap:.25rem;margin-left:.5rem}
-  .appbar-nav a{padding:.4rem .8rem;border-radius:var(--r-md);font-size:.82rem;font-weight:600;color:#aeb9ca;text-decoration:none;transition:color var(--t),background var(--t)}
-  .appbar-nav a:hover{color:#fff;background:var(--ink-2)}
-  .appbar-nav a.active{color:#fff;background:var(--ink-2)}
+  .appbar-nav a{padding:.45rem .9rem;border-radius:var(--r-md);font-size:.82rem;font-weight:600;color:#aeb9ca;text-decoration:none;transition:all .2s cubic-bezier(0.4,0,0.2,1)}
+  .appbar-nav a:hover{color:#fff;background:rgba(255,255,255,0.06)}
+  .appbar-nav a.active{color:#fff;background:var(--brand);box-shadow:0 2px 8px rgba(28,98,203,0.3)}
   .appbar-live{margin-left:auto;display:flex;align-items:center;gap:.45rem;font-size:.74rem;font-weight:600;color:#9fe3b8;white-space:nowrap}
   .live-dot{width:7px;height:7px;background:#3ccb72;border-radius:50%;animation:live 1.8s infinite}
   @keyframes live{0%,100%{opacity:.45}50%{opacity:1}}
@@ -151,8 +151,8 @@
 <header class="appbar">
   <div class="appbar-inner">
     <a class="brand" href="/">
-      <div class="brand-icon">M</div>
-      <div class="brand-name">Martinelli<small>Gestão de ativos</small></div>
+      <div class="brand-icon">I</div>
+      <div class="brand-name">Inventar.IO<small>Gestão de ativos</small></div>
     </a>
     <nav class="appbar-nav">
       <a href="/" class="active">Console</a>
