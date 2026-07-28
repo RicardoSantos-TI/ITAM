@@ -1,7 +1,7 @@
 {
   "server_url": "http://localhost:8000/api/ingest",
   "api_key": "troque-esta-chave-por-uma-forte",
-  "interval_seconds": 3,
+  "interval_seconds": 3600,
   "tags": {
     "setor": "",
     "responsavel": ""
