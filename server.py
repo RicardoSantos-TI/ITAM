@@ -22,7 +22,7 @@ from contextlib import contextmanager
 import threading
 
 from fastapi import FastAPI, Header, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, PlainTextResponse
 
 API_KEY = os.environ.get("API_KEY", "troque-esta-chave-por-uma-forte")
 DB_PATH = os.environ.get("DB_PATH", os.path.join(os.path.dirname(__file__),
@@ -214,6 +214,177 @@ def ativo_detalhes():
             return f.read()
     except FileNotFoundError:
         return "<h1>ativo-detalhes.html nao encontrado</h1>"
+
+
+@app.get("/instalar.html", response_class=HTMLResponse)
+def instalar_pagina():
+    try:
+        instalar_path = os.path.join(os.path.dirname(__file__), "instalar.html")
+        with open(instalar_path, "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        return "<h1>instalar.html nao encontrado</h1>"
+
+
+@app.get("/api/agent/download/agent.py")
+def download_agent():
+    agent_path = os.path.join(os.path.dirname(__file__), "agent.py")
+    if not os.path.exists(agent_path):
+        raise HTTPException(status_code=404, detail="agent.py nao encontrado")
+    return FileResponse(agent_path, media_type="text/plain", filename="agent.py")
+
+
+@app.get("/api/agent/download/config.json")
+def download_config(request: Request):
+    # Retorna o config pre-configurado com a URL deste servidor
+    server_url = f"{request.base_url}api/ingest"
+    cfg = {
+        "server_url": server_url,
+        "api_key": API_KEY,
+        "interval_seconds": 3600,
+        "tags": {
+            "setor": "Default",
+            "responsavel": ""
+        },
+        "verify_tls": True
+    }
+    return JSONResponse(content=cfg)
+
+
+@app.get("/api/agent/installer.ps1", response_class=PlainTextResponse)
+def get_installer_ps1(request: Request):
+    base_url = str(request.base_url).rstrip("/")
+    script = f"""# ITAM Agent Installer for Windows
+$ErrorActionPreference = "Stop"
+
+Write-Host "================================================" -ForegroundColor Cyan
+Write-Host "  Instalador do Agente ITAM - Windows" -ForegroundColor Green
+Write-Host "================================================`n" -ForegroundColor Cyan
+
+# 1. Verificar/Instalar Python
+$pythonCmd = Get-Command python -ErrorAction SilentlyContinue
+if (-not $pythonCmd) {{
+    Write-Host "Python não encontrado. Instalando Python via winget..." -ForegroundColor Yellow
+    winget install -e --id Python.Python.3 --silent --accept-source-agreements --accept-package-agreements
+    if ($LASTEXITCODE -ne 0) {{
+        Write-Host "❌ Erro ao instalar Python via winget. Por favor, instale o Python manualmente (https://python.org) e tente novamente." -ForegroundColor Red
+        exit 1
+    }}
+    Write-Host "✅ Python instalado com sucesso. Reiniciando caminho de variáveis..." -ForegroundColor Green
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+}} else {{
+    Write-Host "✅ Python já instalado: $(python --version)" -ForegroundColor Green
+}}
+
+# 2. Criar diretório do agente
+$agentDir = "C:\\Program Files\\ITAM-Agent"
+if (-not (Test-Path $agentDir)) {{
+    New-Item -ItemType Directory -Force -Path $agentDir | Out-Null
+}}
+
+# 3. Baixar arquivos
+Write-Host "Baixando arquivos do agente..." -ForegroundColor Yellow
+$agentUrl = "{base_url}/api/agent/download/agent.py"
+$configUrl = "{base_url}/api/agent/download/config.json"
+
+Invoke-WebRequest -Uri $agentUrl -OutFile "$agentDir\\agent.py" -UseBasicParsing
+Invoke-WebRequest -Uri $configUrl -OutFile "$agentDir\\config.json" -UseBasicParsing
+
+# 4. Instalar dependências
+Write-Host "Instalando dependências do Python..." -ForegroundColor Yellow
+& python -m pip install --upgrade pip -q
+& pip install -q psutil requests WMI pywin32
+if ($LASTEXITCODE -ne 0) {{
+    Write-Host "⚠️ Aviso ao instalar dependências. Tentando novamente sem modo silencioso..." -ForegroundColor Yellow
+    & pip install psutil requests WMI pywin32
+}}
+
+# 5. Criar tarefa agendada para rodar de hora em hora
+Write-Host "Configurando Tarefa Agendada no Windows..." -ForegroundColor Yellow
+
+$taskName = "ITAM-Agent"
+$pythonw = Get-Command pythonw -ErrorAction SilentlyContinue
+if (-not $pythonw) {{
+    $pythonwPath = "pythonw.exe"
+}} else {{
+    $pythonwPath = $pythonw.Source
+}}
+
+# Remove tarefa existente se houver
+Register-ScheduledTask -TaskName $taskName -Action (New-ScheduledTaskAction -Execute "cmd.exe" -Argument "/c echo") -Trigger (New-ScheduledTaskTrigger -At (Get-Date) -Once) -Force | Out-Null
+Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
+
+$action = New-ScheduledTaskAction -Execute "$pythonwPath" -Argument "\\`"$agentDir\\agent.py\\`""
+$trigger = New-ScheduledTaskTrigger -At (Get-Date) -Once -RepetitionInterval (New-TimeSpan -Minutes 60)
+$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
+
+Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Settings $settings -User "NT AUTHORITY\\SYSTEM" -Force | Out-Null
+
+Write-Host "`n================================================" -ForegroundColor Cyan
+Write-Host "✅ AGENTE INSTALADO E CONFIGURADO COM SUCESSO!" -ForegroundColor Green
+Write-Host "O agente irá rodar automaticamente a cada 60 minutos." -ForegroundColor White
+Write-Host "================================================" -ForegroundColor Cyan
+
+# Executar a primeira coleta imediatamente para registrar o ativo
+Write-Host "Executando primeira coleta de dados agora..." -ForegroundColor Yellow
+& python "$agentDir\\agent.py"
+Write-Host "✅ Coleta concluída e dados enviados!" -ForegroundColor Green
+"""
+    return PlainTextResponse(content=script, media_type="text/plain")
+
+
+@app.get("/api/agent/installer.sh", response_class=PlainTextResponse)
+def get_installer_sh(request: Request):
+    base_url = str(request.base_url).rstrip("/")
+    script = f"""#!/bin/bash
+set -e
+
+echo "================================================"
+echo "  Instalador do Agente ITAM - Linux / macOS"
+echo "================================================"
+echo
+
+# 1. Verificar Python
+if ! command -v python3 &>/dev/null; then
+    echo "❌ Python3 não encontrado! Por favor, instale o Python3 e tente novamente."
+    exit 1
+fi
+echo "✅ Python3 encontrado: \\$(python3 --version)"
+
+# 2. Criar diretório do agente
+AGENT_DIR="/opt/itam-agent"
+sudo mkdir -p "\\$AGENT_DIR"
+sudo chmod 755 "\\$AGENT_DIR"
+
+# 3. Baixar arquivos
+echo "Baixando arquivos do agente..."
+sudo curl -sS -o "\\$AGENT_DIR/agent.py" "{base_url}/api/agent/download/agent.py"
+sudo curl -sS -o "\\$AGENT_DIR/config.json" "{base_url}/api/agent/download/config.json"
+sudo chmod 644 "\\$AGENT_DIR/agent.py" "\\$AGENT_DIR/config.json"
+
+# 4. Instalar dependências
+echo "Instalando dependências do Python..."
+sudo python3 -m pip install --upgrade pip -q || true
+sudo pip3 install psutil requests || sudo python3 -m pip install psutil requests || true
+
+# 5. Adicionar no cron para rodar a cada hora
+echo "Configurando Cron Job..."
+CRON_JOB="0 * * * * python3 \\$AGENT_DIR/agent.py >/dev/null 2>&1"
+(sudo crontab -l 2>/dev/null | grep -Fv "\\$AGENT_DIR/agent.py"; echo "\\$CRON_JOB") | sudo crontab -
+
+echo
+echo "================================================"
+echo "✅ AGENTE INSTALADO E CONFIGURADO COM SUCESSO!"
+echo "O agente irá rodar automaticamente a cada hora."
+echo "================================================"
+echo
+
+# Executar a primeira coleta
+echo "Executando primeira coleta de dados agora..."
+sudo python3 "\\$AGENT_DIR/agent.py"
+echo "✅ Coleta concluída e dados enviados!"
+"""
+    return PlainTextResponse(content=script, media_type="text/plain")
 
 
 # Inicialização assíncrona/em segundo plano do banco de dados para evitar atrasar o arranque

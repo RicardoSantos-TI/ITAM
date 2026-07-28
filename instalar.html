@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Instalação do Agente - ITAM Martinelli</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #1c62cb;
+    --primary-hover: #154a9f;
+    --primary-light: #e8eff9;
+    --success: #2e7d32;
+    --success-light: #e8f5e9;
+    --warn: #e6960a;
+    --warn-light: #fdf5e6;
+    --bg: #f1f1f1;
+    --surface: #ffffff;
+    --border: #d9dde3;
+    --border-light: #e8eaed;
+    --text-1: #262626;
+    --text-2: #52575f;
+    --text-3: #848a94;
+    --code-bg: #1e1e24;
+    --code-text: #f8f8f2;
+    --r-sm: 6px;
+    --r-md: 8px;
+    --r-lg: 10px;
+    --r-xl: 14px;
+    --shadow: 0 1px 3px #0000000f;
+    --shadow-h: 0 8px 20px #26262614;
+    --font: 'Urbanist', sans-serif;
+    --t: .15s ease;
+  }
+  
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  
+  body {
+    background: var(--bg);
+    color: var(--text-1);
+    font-family: var(--font);
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  
+  .page {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2.5rem 3rem 5rem;
+  }
+  
+  @media(max-width: 768px) {
+    .page {
+      padding: 1.5rem 1rem 4rem;
+    }
+  }
+  
+  /* Header */
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  
+  .brand-icon {
+    width: 44px;
+    height: 44px;
+    background: var(--primary);
+    border-radius: var(--r-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 1.2rem;
+    font-weight: 800;
+    flex: none;
+  }
+  
+  .brand-text .eyebrow {
+    font-size: .78rem;
+    font-weight: 600;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+  
+  .brand-text h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #262626;
+    line-height: 1.2;
+  }
+  
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .55rem 1.2rem;
+    border-radius: var(--r-lg);
+    font-family: var(--font);
+    font-size: .88rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background var(--t), border-color var(--t);
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  
+  .btn-secondary {
+    background: var(--surface);
+    color: var(--text-2);
+    border-color: var(--border);
+  }
+  
+  .btn-secondary:hover {
+    background: var(--bg);
+    border-color: var(--text-3);
+  }
+  
+  .btn-primary {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+  }
+  
+  .btn-primary:hover {
+    background: var(--primary-hover);
+  }
+  
+  /* Setup Card */
+  .setup-card {
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--r-xl);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin-bottom: 2rem;
+  }
+  
+  .setup-header {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--border-light);
+  }
+  
+  .setup-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-1);
+    margin-bottom: .25rem;
+  }
+  
+  .setup-subtitle {
+    font-size: .88rem;
+    color: var(--text-3);
+  }
+  
+  .setup-body {
+    padding: 2rem;
+  }
+  
+  /* Tabs */
+  .tabs-container {
+    margin-bottom: 2rem;
+  }
+  
+  .tabs {
+    display: flex;
+    border-bottom: 2px solid var(--border-light);
+    margin-bottom: 1.5rem;
+  }
+  
+  .tab-btn {
+    padding: .75rem 1.5rem;
+    font-family: var(--font);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-3);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    transition: color var(--t);
+  }
+  
+  .tab-btn:hover {
+    color: var(--text-2);
+  }
+  
+  .tab-btn.active {
+    color: var(--primary);
+  }
+  
+  .tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: var(--primary);
+  }
+  
+  .tab-content {
+    display: none;
+  }
+  
+  .tab-content.active {
+    display: block;
+  }
+  
+  /* Alerts */
+  .alert {
+    padding: 1rem 1.25rem;
+    border-radius: var(--r-lg);
+    font-size: .9rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    gap: .75rem;
+    align-items: flex-start;
+  }
+  
+  .alert-warning {
+    background: var(--warn-light);
+    border: 1px solid #f5dda6;
+    color: #856100;
+  }
+  
+  .alert-info {
+    background: var(--primary-light);
+    border: 1px solid #c2dbf5;
+    color: #124d9c;
+  }
+  
+  /* Step list */
+  .step-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  .step-item {
+    position: relative;
+    padding-left: 2.5rem;
+  }
+  
+  .step-number {
+    position: absolute;
+    left: 0;
+    top: 2px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--primary-light);
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .85rem;
+    font-weight: 800;
+  }
+  
+  .step-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-1);
+    margin-bottom: .4rem;
+  }
+  
+  .step-desc {
+    font-size: .9rem;
+    color: var(--text-2);
+    margin-bottom: .75rem;
+  }
+  
+  /* Code blocks */
+  .code-container {
+    position: relative;
+    background: var(--code-bg);
+    border-radius: var(--r-md);
+    overflow: hidden;
+    margin-top: .5rem;
+  }
+  
+  .code-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255,255,255,0.05);
+    padding: .4rem 1rem;
+    font-size: .75rem;
+    color: var(--text-3);
+    font-family: var(--font);
+    font-weight: 600;
+  }
+  
+  .code-block {
+    padding: 1rem;
+    font-family: monospace;
+    font-size: .85rem;
+    color: var(--code-text);
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    user-select: all;
+  }
+  
+  .btn-copy {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    padding: .2rem .6rem;
+    border-radius: 4px;
+    font-size: .75rem;
+    cursor: pointer;
+    font-family: var(--font);
+    font-weight: 600;
+    transition: background var(--t), border-color var(--t);
+  }
+  
+  .btn-copy:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: rgba(255,255,255,0.4);
+  }
+  
+  .btn-copy.copied {
+    background: var(--success);
+    border-color: var(--success);
+  }
+  
+  /* Download section */
+  .download-box {
+    background: var(--bg);
+    border-radius: var(--r-lg);
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+  
+  .download-info h4 {
+    font-size: .95rem;
+    font-weight: 700;
+    color: var(--text-1);
+  }
+  
+  .download-info p {
+    font-size: .8rem;
+    color: var(--text-3);
+  }
+  
+  .download-actions {
+    display: flex;
+    gap: .5rem;
+  }
+  
+  .download-btn {
+    padding: .45rem .9rem;
+    font-size: .8rem;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="page-header">
+    <a href="/" class="brand">
+      <div class="brand-icon">M</div>
+      <div class="brand-text">
+        <p class="eyebrow">Martinelli</p>
+        <h1>Instalação de Agente</h1>
+      </div>
+    </a>
+    <a href="/" class="btn btn-secondary">&larr; Voltar ao Dashboard</a>
+  </div>
+
+  <div class="setup-card">
+    <div class="setup-header">
+      <h2 class="setup-title">Como cadastrar novos computadores</h2>
+      <p class="setup-subtitle">Siga as instruções abaixo para instalar o agente de inventário e saúde em outra máquina e conectá-la a este painel.</p>
+    </div>
+    
+    <div class="setup-body">
+      <div class="tabs-container">
+        <div class="tabs">
+          <button class="tab-btn active" onclick="switchTab(event, 'windows')">Windows</button>
+          <button class="tab-btn" onclick="switchTab(event, 'linux')">Linux / macOS</button>
+        </div>
+        
+        <!-- WINDOWS TAB -->
+        <div id="windows" class="tab-content active">
+          <div class="alert alert-warning">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex:none; margin-top:2px;">
+              <path d="m12 9 2 2m-2 2 2-2m-2 2-2-2m2 2v6M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18Z"/>
+            </svg>
+            <div>
+              <strong>Requisitos do Windows:</strong> Você precisa abrir o PowerShell como <strong>Administrador</strong> na máquina alvo para rodar o comando de instalação. Certifique-se de que o Python 3 está instalado (o script tentará instalar automaticamente via winget caso não encontre).
+            </div>
+          </div>
+          
+          <ul class="step-list">
+            <li class="step-item">
+              <span class="step-number">1</span>
+              <div class="step-title">Copie e execute o instalador automatizado</div>
+              <div class="step-desc">Abra o PowerShell (Administrador) na máquina alvo e execute o seguinte comando de linha única:</div>
+              <div class="code-container">
+                <div class="code-header">
+                  <span>POWERSHELL (ADMIN)</span>
+                  <button class="btn-copy" onclick="copyCode(this, 'win-cmd')">Copiar Comando</button>
+                </div>
+                <div class="code-block" id="win-cmd">irm [SERVER_URL]/api/agent/installer.ps1 | iex</div>
+              </div>
+            </li>
+            
+            <li class="step-item">
+              <span class="step-number">2</span>
+              <div class="step-title">Instalação Manual (Alternativa)</div>
+              <div class="step-desc">Se preferir não usar o instalador automatizado, você pode baixar o script do agente e o arquivo de configuração pré-configurado com a API Key deste servidor e colocá-los na mesma pasta.</div>
+              
+              <div class="download-box">
+                <div class="download-info">
+                  <h4>Arquivos do Agente ITAM</h4>
+                  <p>Baixe ambos os arquivos e execute <code>python agent.py</code> na máquina de destino.</p>
+                </div>
+                <div class="download-actions">
+                  <a href="/api/agent/download/agent.py" class="btn btn-secondary download-btn" download>Baixar agent.py</a>
+                  <a href="/api/agent/download/config.json" class="btn btn-secondary download-btn" download>Baixar config.json</a>
+                </div>
+              </div>
+            </li>
+          </ul>
+        </div>
+        
+        <!-- LINUX / MACOS TAB -->
+        <div id="linux" class="tab-content">
+          <div class="alert alert-info">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex:none; margin-top:2px;">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 16v-4m0-4h.01"/>
+            </svg>
+            <div>
+              <strong>Requisitos:</strong> O comando abaixo baixa o instalador do Linux, cria uma pasta em <code>/opt/itam-agent</code>, instala as dependências Python necessárias e registra a execução horária via <strong>cron</strong>. É necessário possuir privilégios <code>sudo</code>.
+            </div>
+          </div>
+          
+          <ul class="step-list">
+            <li class="step-item">
+              <span class="step-number">1</span>
+              <div class="step-title">Copie e execute o instalador automatizado</div>
+              <div class="step-desc">Abra o terminal da máquina alvo e execute o comando abaixo:</div>
+              <div class="code-container">
+                <div class="code-header">
+                  <span>SHELL BASH</span>
+                  <button class="btn-copy" onclick="copyCode(this, 'linux-cmd')">Copiar Comando</button>
+                </div>
+                <div class="code-block" id="linux-cmd">curl -sSL [SERVER_URL]/api/agent/installer.sh | bash</div>
+              </div>
+            </li>
+            
+            <li class="step-item">
+              <span class="step-number">2</span>
+              <div class="step-title">Instalação Manual (Alternativa)</div>
+              <div class="step-desc">Assim como no Windows, você também pode obter os arquivos brutos do agente e do config para estruturar manualmente o seu script:</div>
+              
+              <div class="download-box">
+                <div class="download-info">
+                  <h4>Arquivos do Agente ITAM</h4>
+                  <p>Baixe os arquivos e configure o cron job ou daemon manualmente.</p>
+                </div>
+                <div class="download-actions">
+                  <a href="/api/agent/download/agent.py" class="btn btn-secondary download-btn" download>Baixar agent.py</a>
+                  <a href="/api/agent/download/config.json" class="btn btn-secondary download-btn" download>Baixar config.json</a>
+                </div>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Preencher dinamicamente a URL do servidor
+  var base = window.location.protocol + '//' + window.location.host;
+  
+  var winBlock = document.getElementById('win-cmd');
+  winBlock.textContent = 'Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; $r = Invoke-WebRequest -Uri "' + base + '/api/agent/installer.ps1" -UseBasicParsing; Invoke-Expression $r.Content';
+
+  var linuxBlock = document.getElementById('linux-cmd');
+  linuxBlock.textContent = 'curl -sSL ' + base + '/api/agent/installer.sh | bash';
+
+  function switchTab(evt, tabId) {
+    var tabContents = document.getElementsByClassName('tab-content');
+    for (var i = 0; i < tabContents.length; i++) {
+      tabContents[i].classList.remove('active');
+    }
+    
+    var tabBtns = document.getElementsByClassName('tab-btn');
+    for (var i = 0; i < tabBtns.length; i++) {
+      tabBtns[i].classList.remove('active');
+    }
+    
+    document.getElementById(tabId).classList.add('active');
+    evt.currentTarget.classList.add('active');
+  }
+
+  function copyCode(btn, elementId) {
+    var text = document.getElementById(elementId).textContent;
+    navigator.clipboard.writeText(text).then(function() {
+      var oldText = btn.textContent;
+      btn.textContent = 'Copiado!';
+      btn.classList.add('copied');
+      setTimeout(function() {
+        btn.textContent = oldText;
+        btn.classList.remove('copied');
+      }, 2000);
+    }).catch(function(err) {
+      console.error('Erro ao copiar texto: ', err);
+    });
+  }
+</script>
+</body>
+</html>
