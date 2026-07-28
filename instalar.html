@@ -3,509 +3,263 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Instalação do Agente - ITAM Martinelli</title>
+<title>Instalar Agente · ITAM Martinelli</title>
+<meta name="description" content="Instruções para instalar o agente de inventário ITAM nas máquinas da rede.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --primary: #1c62cb;
-    --primary-hover: #154a9f;
-    --primary-light: #e8eff9;
-    --success: #2e7d32;
-    --success-light: #e8f5e9;
-    --warn: #e6960a;
-    --warn-light: #fdf5e6;
-    --bg: #f1f1f1;
-    --surface: #ffffff;
-    --border: #d9dde3;
-    --border-light: #e8eaed;
-    --text-1: #262626;
-    --text-2: #52575f;
-    --text-3: #848a94;
-    --code-bg: #1e1e24;
-    --code-text: #f8f8f2;
-    --r-sm: 6px;
-    --r-md: 8px;
-    --r-lg: 10px;
-    --r-xl: 14px;
-    --shadow: 0 1px 3px #0000000f;
-    --shadow-h: 0 8px 20px #26262614;
-    --font: 'Urbanist', sans-serif;
-    --t: .15s ease;
+  /* ── Tokens ─────────────────────────────────────────────── */
+  :root{
+    --ink:#0e1726;--ink-2:#16233a;--ink-line:#233149;
+    --paper:#f4f5f7;--surface:#ffffff;
+    --brand:#1c62cb;--brand-hover:#144e9e;--brand-light:#ebf1fb;--brand-border:#c4d6f2;
+    --ok:#1f8a4c;--ok-light:#e9f6ee;--ok-border:#bfe3cd;
+    --warn:#b26a00;--warn-light:#fdf3e1;--warn-border:#f0d9a8;
+    --crit:#c62828;--crit-light:#fceaea;--crit-border:#f2c5c5;
+    --border:#dde1e7;--border-light:#e9ecf0;
+    --text-1:#141f2e;--text-2:#4b5563;--text-3:#7a828e;--text-dis:#b2b8c2;
+    --r-sm:6px;--r-md:8px;--r-lg:10px;--r-xl:14px;
+    --shadow:0 1px 2px #0f172a0a,0 1px 3px #0f172a0f;
+    --sans:'Inter',system-ui,sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+    --t:.15s ease;
   }
-  
-  *, *::before, *::after {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
-  
-  body {
-    background: var(--bg);
-    color: var(--text-1);
-    font-family: var(--font);
-    font-size: 16px;
-    line-height: 1.5;
-    -webkit-font-smoothing: antialiased;
-  }
-  
-  .page {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 2.5rem 3rem 5rem;
-  }
-  
-  @media(max-width: 768px) {
-    .page {
-      padding: 1.5rem 1rem 4rem;
-    }
-  }
-  
-  /* Header */
-  .page-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-bottom: 2rem;
-  }
-  
-  .brand {
-    display: flex;
-    align-items: center;
-    gap: .75rem;
-    cursor: pointer;
-    text-decoration: none;
-  }
-  
-  .brand-icon {
-    width: 44px;
-    height: 44px;
-    background: var(--primary);
-    border-radius: var(--r-md);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    font-size: 1.2rem;
-    font-weight: 800;
-    flex: none;
-  }
-  
-  .brand-text .eyebrow {
-    font-size: .78rem;
-    font-weight: 600;
-    color: var(--text-3);
-    text-transform: uppercase;
-    letter-spacing: .5px;
-  }
-  
-  .brand-text h1 {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #262626;
-    line-height: 1.2;
-  }
-  
-  /* Buttons */
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: .4rem;
-    padding: .55rem 1.2rem;
-    border-radius: var(--r-lg);
-    font-family: var(--font);
-    font-size: .88rem;
-    font-weight: 600;
-    cursor: pointer;
-    border: 1px solid transparent;
-    transition: background var(--t), border-color var(--t);
-    white-space: nowrap;
-    text-decoration: none;
-  }
-  
-  .btn-secondary {
-    background: var(--surface);
-    color: var(--text-2);
-    border-color: var(--border);
-  }
-  
-  .btn-secondary:hover {
-    background: var(--bg);
-    border-color: var(--text-3);
-  }
-  
-  .btn-primary {
-    background: var(--primary);
-    color: #fff;
-    border-color: var(--primary);
-  }
-  
-  .btn-primary:hover {
-    background: var(--primary-hover);
-  }
-  
-  /* Setup Card */
-  .setup-card {
-    background: var(--surface);
-    border: 1px solid var(--border-light);
-    border-radius: var(--r-xl);
-    box-shadow: var(--shadow);
-    overflow: hidden;
-    margin-bottom: 2rem;
-  }
-  
-  .setup-header {
-    padding: 1.5rem 2rem;
-    border-bottom: 1px solid var(--border-light);
-  }
-  
-  .setup-title {
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: var(--text-1);
-    margin-bottom: .25rem;
-  }
-  
-  .setup-subtitle {
-    font-size: .88rem;
-    color: var(--text-3);
-  }
-  
-  .setup-body {
-    padding: 2rem;
-  }
-  
-  /* Tabs */
-  .tabs-container {
-    margin-bottom: 2rem;
-  }
-  
-  .tabs {
-    display: flex;
-    border-bottom: 2px solid var(--border-light);
-    margin-bottom: 1.5rem;
-  }
-  
-  .tab-btn {
-    padding: .75rem 1.5rem;
-    font-family: var(--font);
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--text-3);
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    position: relative;
-    transition: color var(--t);
-  }
-  
-  .tab-btn:hover {
-    color: var(--text-2);
-  }
-  
-  .tab-btn.active {
-    color: var(--primary);
-  }
-  
-  .tab-btn.active::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    background: var(--primary);
-  }
-  
-  .tab-content {
-    display: none;
-  }
-  
-  .tab-content.active {
-    display: block;
-  }
-  
-  /* Alerts */
-  .alert {
-    padding: 1rem 1.25rem;
-    border-radius: var(--r-lg);
-    font-size: .9rem;
-    margin-bottom: 1.5rem;
-    display: flex;
-    gap: .75rem;
-    align-items: flex-start;
-  }
-  
-  .alert-warning {
-    background: var(--warn-light);
-    border: 1px solid #f5dda6;
-    color: #856100;
-  }
-  
-  .alert-info {
-    background: var(--primary-light);
-    border: 1px solid #c2dbf5;
-    color: #124d9c;
-  }
-  
-  /* Step list */
-  .step-list {
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-  
-  .step-item {
-    position: relative;
-    padding-left: 2.5rem;
-  }
-  
-  .step-number {
-    position: absolute;
-    left: 0;
-    top: 2px;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: var(--primary-light);
-    color: var(--primary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: .85rem;
-    font-weight: 800;
-  }
-  
-  .step-title {
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--text-1);
-    margin-bottom: .4rem;
-  }
-  
-  .step-desc {
-    font-size: .9rem;
-    color: var(--text-2);
-    margin-bottom: .75rem;
-  }
-  
-  /* Code blocks */
-  .code-container {
-    position: relative;
-    background: var(--code-bg);
-    border-radius: var(--r-md);
-    overflow: hidden;
-    margin-top: .5rem;
-  }
-  
-  .code-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: rgba(255,255,255,0.05);
-    padding: .4rem 1rem;
-    font-size: .75rem;
-    color: var(--text-3);
-    font-family: var(--font);
-    font-weight: 600;
-  }
-  
-  .code-block {
-    padding: 1rem;
-    font-family: monospace;
-    font-size: .85rem;
-    color: var(--code-text);
-    overflow-x: auto;
-    white-space: pre-wrap;
-    word-break: break-all;
-    user-select: all;
-  }
-  
-  .btn-copy {
-    background: transparent;
-    border: 1px solid rgba(255,255,255,0.2);
-    color: #fff;
-    padding: .2rem .6rem;
-    border-radius: 4px;
-    font-size: .75rem;
-    cursor: pointer;
-    font-family: var(--font);
-    font-weight: 600;
-    transition: background var(--t), border-color var(--t);
-  }
-  
-  .btn-copy:hover {
-    background: rgba(255,255,255,0.1);
-    border-color: rgba(255,255,255,0.4);
-  }
-  
-  .btn-copy.copied {
-    background: var(--success);
-    border-color: var(--success);
-  }
-  
-  /* Download section */
-  .download-box {
-    background: var(--bg);
-    border-radius: var(--r-lg);
-    padding: 1.25rem 1.5rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-top: 1.5rem;
-  }
-  
-  .download-info h4 {
-    font-size: .95rem;
-    font-weight: 700;
-    color: var(--text-1);
-  }
-  
-  .download-info p {
-    font-size: .8rem;
-    color: var(--text-3);
-  }
-  
-  .download-actions {
-    display: flex;
-    gap: .5rem;
-  }
-  
-  .download-btn {
-    padding: .45rem .9rem;
-    font-size: .8rem;
-  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--text-1);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+  :focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+  code{font-family:var(--mono);font-size:.82em;background:var(--paper);border:1px solid var(--border-light);border-radius:4px;padding:.08em .35em}
+
+  /* ── App bar ────────────────────────────────────────────── */
+  .appbar{background:var(--ink);color:#e8ecf3;position:sticky;top:0;z-index:50;border-bottom:1px solid var(--ink-line)}
+  .appbar-inner{max-width:1280px;margin:0 auto;padding:0 2rem;height:56px;display:flex;align-items:center;gap:1.75rem}
+  @media(max-width:768px){.appbar-inner{padding:0 1rem;gap:1rem}}
+  .brand{display:flex;align-items:center;gap:.65rem;text-decoration:none;color:inherit}
+  .brand-icon{width:30px;height:30px;background:var(--brand);border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.95rem;font-weight:800;flex:none}
+  .brand-name{font-size:.9rem;font-weight:700;letter-spacing:.01em}
+  .brand-name small{display:block;font-size:.64rem;font-weight:600;color:#8b97ab;text-transform:uppercase;letter-spacing:.09em;line-height:1.1}
+  .appbar-nav{display:flex;gap:.25rem;margin-left:.5rem}
+  .appbar-nav a{padding:.4rem .8rem;border-radius:var(--r-md);font-size:.82rem;font-weight:600;color:#aeb9ca;text-decoration:none;transition:color var(--t),background var(--t)}
+  .appbar-nav a:hover{color:#fff;background:var(--ink-2)}
+  .appbar-nav a.active{color:#fff;background:var(--ink-2)}
+
+  /* ── Page ───────────────────────────────────────────────── */
+  .page{max-width:900px;margin:0 auto;padding:2rem 2rem 5rem}
+  @media(max-width:768px){.page{padding:1.25rem 1rem 4rem}}
+  .page-head{margin-bottom:1.5rem}
+  .page-head h1{font-size:1.45rem;font-weight:800;letter-spacing:-.015em}
+  .page-head p{font-size:.88rem;color:var(--text-2);margin-top:.35rem;max-width:60ch}
+
+  /* ── Setup card ─────────────────────────────────────────── */
+  .setup-card{background:var(--surface);border:1px solid var(--border-light);border-radius:var(--r-xl);box-shadow:var(--shadow);overflow:hidden}
+  .setup-body{padding:1.5rem}
+  @media(max-width:768px){.setup-body{padding:1.1rem}}
+
+  /* ── Tabs de SO ─────────────────────────────────────────── */
+  .tabs{display:flex;gap:.25rem;background:var(--paper);border:1px solid var(--border-light);padding:.3rem;border-radius:var(--r-lg);margin-bottom:1.5rem;width:fit-content}
+  .tab-btn{display:inline-flex;align-items:center;gap:.45rem;padding:.5rem 1.1rem;border:none;border-radius:var(--r-md);background:transparent;color:var(--text-3);font-family:var(--sans);font-size:.84rem;font-weight:600;cursor:pointer;transition:color var(--t),background var(--t)}
+  .tab-btn:hover{color:var(--text-1)}
+  .tab-btn.active{color:#fff;background:var(--ink)}
+  .tab-content{display:none}
+  .tab-content.active{display:block}
+
+  /* ── Alertas ────────────────────────────────────────────── */
+  .alert{display:flex;gap:.7rem;padding:.85rem 1rem;border-radius:var(--r-lg);border:1px solid;font-size:.83rem;line-height:1.55;margin-bottom:1.5rem}
+  .alert svg{flex:none;margin-top:2px}
+  .alert-warning{background:var(--warn-light);border-color:var(--warn-border);color:#6e4a00}
+  .alert-warning svg{stroke:var(--warn)}
+  .alert-info{background:var(--brand-light);border-color:var(--brand-border);color:#123f7e}
+  .alert-info svg{stroke:var(--brand)}
+  .alert strong{font-weight:700}
+
+  /* ── Passos ─────────────────────────────────────────────── */
+  .step-list{list-style:none;display:grid;gap:1.75rem}
+  .step-item{position:relative;padding-left:2.6rem}
+  .step-item::after{content:'';position:absolute;left:14px;top:36px;bottom:-1.45rem;width:2px;background:var(--border-light)}
+  .step-item:last-child::after{display:none}
+  .step-number{position:absolute;left:0;top:0;width:30px;height:30px;border-radius:50%;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:.82rem;font-weight:700}
+  .step-title{font-size:.95rem;font-weight:700;margin-bottom:.25rem;padding-top:.2rem}
+  .step-desc{font-size:.84rem;color:var(--text-2);margin-bottom:.85rem;max-width:65ch}
+
+  /* ── Bloco de código ────────────────────────────────────── */
+  .code-container{background:var(--ink);border:1px solid var(--ink-line);border-radius:var(--r-lg);overflow:hidden}
+  .code-header{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.5rem .6rem .5rem 1rem;background:var(--ink-2);border-bottom:1px solid var(--ink-line)}
+  .code-header span{font-family:var(--mono);font-size:.66rem;font-weight:700;color:#8b97ab;text-transform:uppercase;letter-spacing:.09em}
+  .btn-copy{display:inline-flex;align-items:center;gap:.4rem;padding:.35rem .75rem;border-radius:var(--r-sm);border:1px solid var(--ink-line);background:transparent;color:#c6cfdc;font-family:var(--sans);font-size:.74rem;font-weight:600;cursor:pointer;transition:background var(--t),color var(--t),border-color var(--t)}
+  .btn-copy:hover{background:var(--ink);color:#fff}
+  .btn-copy.copied{background:var(--ok);border-color:var(--ok);color:#fff}
+  .code-block{padding:.9rem 1rem;font-family:var(--mono);font-size:.78rem;line-height:1.6;color:#dbe4f0;white-space:pre-wrap;word-break:break-all}
+
+  /* ── Download box ───────────────────────────────────────── */
+  .download-box{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;background:var(--paper);border:1px solid var(--border-light);border-radius:var(--r-lg);padding:.95rem 1.15rem}
+  .download-info h4{font-size:.86rem;font-weight:700;margin-bottom:.15rem}
+  .download-info p{font-size:.78rem;color:var(--text-3)}
+  .download-actions{display:flex;gap:.5rem;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;gap:.45rem;padding:.48rem .9rem;border-radius:var(--r-md);font-family:var(--sans);font-size:.8rem;font-weight:600;cursor:pointer;border:1px solid transparent;transition:background var(--t),border-color var(--t);white-space:nowrap;text-decoration:none}
+  .btn svg{flex:none}
+  .btn-secondary{background:var(--surface);color:var(--text-1);border-color:var(--border)}
+  .btn-secondary:hover{border-color:var(--text-3);background:var(--paper)}
+
+  /* ── Nota final ─────────────────────────────────────────── */
+  .footnote{display:flex;gap:.6rem;align-items:flex-start;margin-top:1.5rem;padding:.85rem 1rem;background:var(--ok-light);border:1px solid var(--ok-border);border-radius:var(--r-lg);font-size:.8rem;color:#155c34}
+  .footnote svg{stroke:var(--ok);flex:none;margin-top:2px}
+  .footnote a{color:inherit;font-weight:700}
+
+  ::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 </style>
 </head>
 <body>
-<div class="page">
-  <div class="page-header">
-    <a href="/" class="brand">
+
+<header class="appbar">
+  <div class="appbar-inner">
+    <a class="brand" href="/">
       <div class="brand-icon">M</div>
-      <div class="brand-text">
-        <p class="eyebrow">Martinelli</p>
-        <h1>Instalação de Agente</h1>
-      </div>
+      <div class="brand-name">Martinelli<small>Gestão de ativos</small></div>
     </a>
-    <a href="/" class="btn btn-secondary">&larr; Voltar ao Dashboard</a>
+    <nav class="appbar-nav">
+      <a href="/">Console</a>
+      <a href="/instalar.html" class="active">Instalar agente</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <div class="page-head">
+    <h1>Instalar agente</h1>
+    <p>Instale o agente de inventário e saúde numa máquina da rede para que ela apareça no console. Escolha o sistema operacional e siga os passos abaixo.</p>
   </div>
 
   <div class="setup-card">
-    <div class="setup-header">
-      <h2 class="setup-title">Como cadastrar novos computadores</h2>
-      <p class="setup-subtitle">Siga as instruções abaixo para instalar o agente de inventário e saúde em outra máquina e conectá-la a este painel.</p>
-    </div>
-    
     <div class="setup-body">
-      <div class="tabs-container">
-        <div class="tabs">
-          <button class="tab-btn active" onclick="switchTab(event, 'windows')">Windows</button>
-          <button class="tab-btn" onclick="switchTab(event, 'linux')">Linux / macOS</button>
-        </div>
-        
-        <!-- WINDOWS TAB -->
-        <div id="windows" class="tab-content active">
-          <div class="alert alert-warning">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex:none; margin-top:2px;">
-              <path d="m12 9 2 2m-2 2 2-2m-2 2-2-2m2 2v6M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18Z"/>
-            </svg>
-            <div>
-              <strong>Requisitos do Windows:</strong> Você precisa abrir o PowerShell como <strong>Administrador</strong> na máquina alvo para rodar o comando de instalação. Certifique-se de que o Python 3 está instalado (o script tentará instalar automaticamente via winget caso não encontre).
-            </div>
+      <div class="tabs" role="tablist">
+        <button class="tab-btn active" onclick="switchTab(event, 'windows')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5 10.5 4.4v7.1H3V5.5ZM3 18.5v-6h7.5v7.1L3 18.5ZM11.5 4.2 21 3v8.5h-9.5V4.2ZM21 12.5V21l-9.5-1.2v-7.3H21Z"/></svg>
+          Windows
+        </button>
+        <button class="tab-btn" onclick="switchTab(event, 'linux')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 17h16M6 17l4-11h4l4 11M12 17v4"/></svg>
+          Linux / macOS
+        </button>
+      </div>
+
+      <!-- ── Windows ── -->
+      <div id="windows" class="tab-content active">
+        <div class="alert alert-warning">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"/><path d="M12 9v4M12 17h.01"/>
+          </svg>
+          <div>
+            <strong>Requisitos:</strong> abra o PowerShell como <strong>Administrador</strong> na máquina alvo. O Python 3 deve estar instalado — o instalador tentará instalá-lo automaticamente via <code>winget</code> caso não encontre.
           </div>
-          
-          <ul class="step-list">
-            <li class="step-item">
-              <span class="step-number">1</span>
-              <div class="step-title">Copie e execute o instalador automatizado</div>
-              <div class="step-desc">Abra o PowerShell (Administrador) na máquina alvo e execute o seguinte comando de linha única:</div>
-              <div class="code-container">
-                <div class="code-header">
-                  <span>POWERSHELL (ADMIN)</span>
-                  <button class="btn-copy" onclick="copyCode(this, 'win-cmd')">Copiar Comando</button>
-                </div>
-                <div class="code-block" id="win-cmd">irm [SERVER_URL]/api/agent/installer.ps1 | iex</div>
-              </div>
-            </li>
-            
-            <li class="step-item">
-              <span class="step-number">2</span>
-              <div class="step-title">Instalação Manual (Alternativa)</div>
-              <div class="step-desc">Se preferir não usar o instalador automatizado, você pode baixar o script do agente e o arquivo de configuração pré-configurado com a API Key deste servidor e colocá-los na mesma pasta.</div>
-              
-              <div class="download-box">
-                <div class="download-info">
-                  <h4>Arquivos do Agente ITAM</h4>
-                  <p>Baixe ambos os arquivos e execute <code>python agent.py</code> na máquina de destino.</p>
-                </div>
-                <div class="download-actions">
-                  <a href="/api/agent/download/agent.py" class="btn btn-secondary download-btn" download>Baixar agent.py</a>
-                  <a href="/api/agent/download/config.json" class="btn btn-secondary download-btn" download>Baixar config.json</a>
-                </div>
-              </div>
-            </li>
-          </ul>
         </div>
-        
-        <!-- LINUX / MACOS TAB -->
-        <div id="linux" class="tab-content">
-          <div class="alert alert-info">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex:none; margin-top:2px;">
-              <circle cx="12" cy="12" r="10"/>
-              <path d="M12 16v-4m0-4h.01"/>
-            </svg>
-            <div>
-              <strong>Requisitos:</strong> O comando abaixo baixa o instalador do Linux, cria uma pasta em <code>/opt/itam-agent</code>, instala as dependências Python necessárias e registra a execução horária via <strong>cron</strong>. É necessário possuir privilégios <code>sudo</code>.
+
+        <ul class="step-list">
+          <li class="step-item">
+            <span class="step-number">1</span>
+            <div class="step-title">Execute o instalador automatizado</div>
+            <div class="step-desc">No PowerShell (Administrador) da máquina alvo, cole e execute o comando abaixo. Ele baixa o agente, instala as dependências e agenda a coleta automática.</div>
+            <div class="code-container">
+              <div class="code-header">
+                <span>PowerShell · Admin</span>
+                <button class="btn-copy" onclick="copyCode(this, 'win-cmd')">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                  Copiar
+                </button>
+              </div>
+              <div class="code-block" id="win-cmd">irm [SERVER_URL]/api/agent/installer.ps1 | iex</div>
             </div>
+          </li>
+
+          <li class="step-item">
+            <span class="step-number">2</span>
+            <div class="step-title">Instalação manual (alternativa)</div>
+            <div class="step-desc">Se preferir não usar o instalador automatizado, baixe o script do agente e o arquivo de configuração já preenchido com a chave de API deste servidor. Coloque os dois na mesma pasta e execute <code>python agent.py</code>.</div>
+            <div class="download-box">
+              <div class="download-info">
+                <h4>Arquivos do agente</h4>
+                <p>agent.py + config.json pré-configurado para este servidor.</p>
+              </div>
+              <div class="download-actions">
+                <a href="/api/agent/download/agent.py" class="btn btn-secondary" download>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                  agent.py
+                </a>
+                <a href="/api/agent/download/config.json" class="btn btn-secondary" download>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                  config.json
+                </a>
+              </div>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- ── Linux / macOS ── -->
+      <div id="linux" class="tab-content">
+        <div class="alert alert-info">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 16v-4M12 8h.01"/>
+          </svg>
+          <div>
+            <strong>Requisitos:</strong> o comando abaixo cria a pasta <code>/opt/itam-agent</code>, instala as dependências Python e registra a coleta horária via <strong>cron</strong>. É necessário ter privilégios <code>sudo</code>.
           </div>
-          
-          <ul class="step-list">
-            <li class="step-item">
-              <span class="step-number">1</span>
-              <div class="step-title">Copie e execute o instalador automatizado</div>
-              <div class="step-desc">Abra o terminal da máquina alvo e execute o comando abaixo:</div>
-              <div class="code-container">
-                <div class="code-header">
-                  <span>SHELL BASH</span>
-                  <button class="btn-copy" onclick="copyCode(this, 'linux-cmd')">Copiar Comando</button>
-                </div>
-                <div class="code-block" id="linux-cmd">curl -sSL [SERVER_URL]/api/agent/installer.sh | bash</div>
-              </div>
-            </li>
-            
-            <li class="step-item">
-              <span class="step-number">2</span>
-              <div class="step-title">Instalação Manual (Alternativa)</div>
-              <div class="step-desc">Assim como no Windows, você também pode obter os arquivos brutos do agente e do config para estruturar manualmente o seu script:</div>
-              
-              <div class="download-box">
-                <div class="download-info">
-                  <h4>Arquivos do Agente ITAM</h4>
-                  <p>Baixe os arquivos e configure o cron job ou daemon manualmente.</p>
-                </div>
-                <div class="download-actions">
-                  <a href="/api/agent/download/agent.py" class="btn btn-secondary download-btn" download>Baixar agent.py</a>
-                  <a href="/api/agent/download/config.json" class="btn btn-secondary download-btn" download>Baixar config.json</a>
-                </div>
-              </div>
-            </li>
-          </ul>
         </div>
+
+        <ul class="step-list">
+          <li class="step-item">
+            <span class="step-number">1</span>
+            <div class="step-title">Execute o instalador automatizado</div>
+            <div class="step-desc">Abra o terminal da máquina alvo e execute o comando abaixo:</div>
+            <div class="code-container">
+              <div class="code-header">
+                <span>Bash</span>
+                <button class="btn-copy" onclick="copyCode(this, 'linux-cmd')">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                  Copiar
+                </button>
+              </div>
+              <div class="code-block" id="linux-cmd">curl -sSL [SERVER_URL]/api/agent/installer.sh | bash</div>
+            </div>
+          </li>
+
+          <li class="step-item">
+            <span class="step-number">2</span>
+            <div class="step-title">Instalação manual (alternativa)</div>
+            <div class="step-desc">Baixe os arquivos do agente e configure o cron job ou daemon manualmente:</div>
+            <div class="download-box">
+              <div class="download-info">
+                <h4>Arquivos do agente</h4>
+                <p>agent.py + config.json pré-configurado para este servidor.</p>
+              </div>
+              <div class="download-actions">
+                <a href="/api/agent/download/agent.py" class="btn btn-secondary" download>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                  agent.py
+                </a>
+                <a href="/api/agent/download/config.json" class="btn btn-secondary" download>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                  config.json
+                </a>
+              </div>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="footnote">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.1V12a10 10 0 1 1-5.9-9.1"/><path d="m9 11 3 3L22 4"/></svg>
+        <span>Após a instalação, a máquina envia o primeiro inventário em até 1 minuto e aparece automaticamente no <a href="/">console de ativos</a>.</span>
       </div>
     </div>
   </div>
-</div>
+</main>
 
 <script>
-  // Preencher dinamicamente a URL do servidor
+  // Preencher dinamicamente a URL do servidor nos comandos
   var base = window.location.protocol + '//' + window.location.host;
-  
+
   var winBlock = document.getElementById('win-cmd');
   winBlock.textContent = 'Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; $r = Invoke-WebRequest -Uri "' + base + '/api/agent/installer.ps1" -UseBasicParsing; Invoke-Expression $r.Content';
 
@@ -517,12 +271,10 @@
     for (var i = 0; i < tabContents.length; i++) {
       tabContents[i].classList.remove('active');
     }
-    
     var tabBtns = document.getElementsByClassName('tab-btn');
     for (var i = 0; i < tabBtns.length; i++) {
       tabBtns[i].classList.remove('active');
     }
-    
     document.getElementById(tabId).classList.add('active');
     evt.currentTarget.classList.add('active');
   }
@@ -530,11 +282,11 @@
   function copyCode(btn, elementId) {
     var text = document.getElementById(elementId).textContent;
     navigator.clipboard.writeText(text).then(function() {
-      var oldText = btn.textContent;
+      var oldHTML = btn.innerHTML;
       btn.textContent = 'Copiado!';
       btn.classList.add('copied');
       setTimeout(function() {
-        btn.textContent = oldText;
+        btn.innerHTML = oldHTML;
         btn.classList.remove('copied');
       }, 2000);
     }).catch(function(err) {

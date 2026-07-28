@@ -198,11 +198,13 @@ def list_assets():
 def asset_detail(asset_id: str):
     with db() as conn:
         row = conn.execute(
-            "SELECT data, last_seen FROM assets WHERE asset_id=?",
+            "SELECT hostname, data, last_seen FROM assets WHERE asset_id=?",
             (asset_id,)).fetchone()
         if not row:
             raise HTTPException(status_code=404, detail="ativo nao encontrado")
         payload = json.loads(row["data"])
+        payload["hostname"] = row["hostname"]
+        payload["last_seen"] = row["last_seen"]
         payload["status"] = _status_of(payload, row["last_seen"])
         hist = conn.execute(
             "SELECT ts, cpu, memory, disk FROM history "
