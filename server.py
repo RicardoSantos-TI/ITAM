@@ -75,6 +75,13 @@ def now_iso():
     return dt.datetime.now(dt.timezone.utc).isoformat()
 
 
+def get_base_url(request: Request) -> str:
+    proto = request.headers.get("x-forwarded-proto", request.url.scheme)
+    host = request.headers.get("x-forwarded-host", request.url.netloc)
+    return f"{proto}://{host}/"
+
+
+
 # ---------------------------------------------------------------------------
 # Ingestao
 # ---------------------------------------------------------------------------
@@ -237,7 +244,7 @@ def download_agent():
 @app.get("/api/agent/download/config.json")
 def download_config(request: Request):
     # Retorna o config pre-configurado com a URL deste servidor
-    server_url = f"{request.base_url}api/ingest"
+    server_url = f"{get_base_url(request)}api/ingest"
     cfg = {
         "server_url": server_url,
         "api_key": API_KEY,
@@ -253,7 +260,7 @@ def download_config(request: Request):
 
 @app.get("/api/agent/installer.ps1", response_class=PlainTextResponse)
 def get_installer_ps1(request: Request):
-    base_url = str(request.base_url).rstrip("/")
+    base_url = get_base_url(request).rstrip("/")
     script = f"""# ITAM Agent Installer for Windows
 $ErrorActionPreference = "Stop"
 
@@ -335,7 +342,7 @@ Write-Host "✅ Coleta concluída e dados enviados!" -ForegroundColor Green
 
 @app.get("/api/agent/installer.sh", response_class=PlainTextResponse)
 def get_installer_sh(request: Request):
-    base_url = str(request.base_url).rstrip("/")
+    base_url = get_base_url(request).rstrip("/")
     script = f"""#!/bin/bash
 set -e
 
