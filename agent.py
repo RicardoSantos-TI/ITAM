@@ -531,6 +531,65 @@ def build_partial_payload(cfg: dict) -> dict:
     }
 
 
+def check_for_updates(cfg: dict) -> bool:
+    if not requests:
+        return False
+    try:
+        server_url = cfg.get("server_url", "")
+        if not server_url:
+            return False
+        # Remove a rota para obter o base_url do servidor
+        server_base = server_url.split("/api/ingest")[0].rstrip("/")
+        agent_url = f"{server_base}/api/agent/download/agent.py"
+
+        # Faz o download do código atual no servidor
+        r = requests.get(agent_url, timeout=15, verify=cfg.get("verify_tls", True))
+        if r.status_code != 200:
+            return False
+
+        new_code = r.text
+        local_path = os.path.abspath(__file__)
+        with open(local_path, "r", encoding="utf-8") as f:
+            current_code = f.read()
+
+        current_hash = hashlib.sha256(current_code.encode("utf-8")).hexdigest()
+        new_hash = hashlib.sha256(new_code.encode("utf-8")).hexdigest()
+
+        if current_hash != new_hash:
+            log.info("Nova versao do agente detectada no servidor! Atualizando...")
+            # Faz backup do arquivo atual antes de atualizar
+            backup_path = local_path + ".bak"
+            with open(backup_path, "w", encoding="utf-8") as f:
+                f.write(current_code)
+
+            try:
+                # Sobrescreve com o novo código
+                with open(local_path, "w", encoding="utf-8") as f:
+                    f.write(new_code)
+                log.info("Agente atualizado com sucesso. Reiniciando processo...")
+                # Remove backup antes de reiniciar
+                if os.path.exists(backup_path):
+                    try:
+                        os.remove(backup_path)
+                    except Exception:
+                        pass
+                # Executa o processo novamente substituindo o atual
+                os.execv(sys.executable, [sys.executable] + sys.argv)
+                return True
+            except Exception as e:
+                log.error("Falha ao sobrescrever o arquivo do agente: %s. Restaurando backup...", e)
+                if os.path.exists(backup_path):
+                    try:
+                        os.replace(backup_path, local_path)
+                    except Exception:
+                        pass
+        else:
+            log.debug("Agente ja esta na versao mais recente.")
+    except Exception as e:
+        log.error("Falha verificando atualizacoes do agente: %s", e)
+    return False
+
+
 def send_payload(cfg: dict, payload: dict) -> bool:
     if not requests:
         log.error("Biblioteca 'requests' ausente. pip install requests")
@@ -577,6 +636,10 @@ def main():
         log.warning("psutil ausente: coleta limitada. pip install psutil")
 
     cfg = load_config()
+    if not args.dry_run:
+        # Checa por atualizações logo no arranque
+        check_for_updates(cfg)
+
     if not args.loop:
         ok = run_once(cfg, dry_run=args.dry_run, partial=False)
         sys.exit(0 if ok else 1)
@@ -593,6 +656,9 @@ def main():
         time.sleep(fast_interval)
         now = time.time()
         if now - last_full_scan >= interval:
+            if not args.dry_run:
+                # Checa por atualizações antes de iniciar a varredura completa
+                check_for_updates(cfg)
             log.info("Executando inventario completo agendado...")
             run_once(cfg, dry_run=args.dry_run, partial=False)
             last_full_scan = now
