@@ -97,8 +97,31 @@ async def ingest(request: Request, x_api_key: str = Header(default="")):
 
     hostname = (payload.get("system") or {}).get("hostname")
     health = payload.get("health") or {}
+    is_partial = payload.get("partial", False)
 
     with db() as conn:
+        if is_partial:
+            # Tenta buscar o inventário existente para mesclar
+            row = conn.execute("SELECT hostname, data FROM assets WHERE asset_id = ?", (asset_id,)).fetchone()
+            if row:
+                existing_data = json.loads(row["data"])
+                # Mescla a saúde
+                existing_data["health"] = health
+                # Atualiza o timestamp
+                existing_data["timestamp"] = payload.get("timestamp") or now_iso()
+                # Atualiza informações dinâmicas de sistema (como usuário logado)
+                if "system" in payload and payload["system"]:
+                    if "system" not in existing_data:
+                        existing_data["system"] = {}
+                    existing_data["system"]["logged_user"] = payload["system"].get("logged_user") or existing_data["system"].get("logged_user")
+                
+                payload_to_save = existing_data
+                hostname = row["hostname"] or hostname
+            else:
+                payload_to_save = payload
+        else:
+            payload_to_save = payload
+
         conn.execute(
             """INSERT INTO assets (asset_id, hostname, last_seen, data)
                VALUES (?, ?, ?, ?)
@@ -106,7 +129,7 @@ async def ingest(request: Request, x_api_key: str = Header(default="")):
                  hostname=excluded.hostname,
                  last_seen=excluded.last_seen,
                  data=excluded.data""",
-            (asset_id, hostname, now_iso(), json.dumps(payload)),
+            (asset_id, hostname, now_iso(), json.dumps(payload_to_save)),
         )
         conn.execute(
             """INSERT INTO history (asset_id, ts, cpu, memory, disk, snapshot)

@@ -504,6 +504,33 @@ def build_payload(cfg: dict) -> dict:
     }
 
 
+def build_partial_payload(cfg: dict) -> dict:
+    logged_user = None
+    try:
+        logged_user = os.getlogin()
+    except Exception:
+        pass
+    if IS_WINDOWS and wmi:
+        try:
+            c = wmi.WMI()
+            for cs in c.Win32_ComputerSystem():
+                if cs.UserName:
+                    logged_user = cs.UserName
+        except Exception:
+            pass
+
+    return {
+        "asset_id": stable_asset_id(),
+        "collected_at": _now_iso(),
+        "partial": True,
+        "system": {
+            "hostname": socket.gethostname(),
+            "logged_user": logged_user
+        },
+        "health": _safe(collect_health, {}),
+    }
+
+
 def send_payload(cfg: dict, payload: dict) -> bool:
     if not requests:
         log.error("Biblioteca 'requests' ausente. pip install requests")
@@ -527,8 +554,11 @@ def send_payload(cfg: dict, payload: dict) -> bool:
     return False
 
 
-def run_once(cfg, dry_run=False):
-    payload = build_payload(cfg)
+def run_once(cfg, dry_run=False, partial=False):
+    if partial:
+        payload = build_partial_payload(cfg)
+    else:
+        payload = build_payload(cfg)
     if dry_run:
         print(json.dumps(payload, indent=2, ensure_ascii=False, default=str))
         return True
@@ -548,14 +578,26 @@ def main():
 
     cfg = load_config()
     if not args.loop:
-        ok = run_once(cfg, dry_run=args.dry_run)
+        ok = run_once(cfg, dry_run=args.dry_run, partial=False)
         sys.exit(0 if ok else 1)
 
     interval = int(cfg.get("interval_seconds", 3600))
-    log.info("Agente em laco. Intervalo=%ss", interval)
+    fast_interval = 15
+    log.info("Agente em laco. Intervalo do Inventario=%ss. Intervalo Tempo Real=%ss", interval, fast_interval)
+
+    # Executa primeiro envio completo no arranque
+    run_once(cfg, dry_run=args.dry_run, partial=False)
+    last_full_scan = time.time()
+
     while True:
-        run_once(cfg, dry_run=args.dry_run)
-        time.sleep(interval)
+        time.sleep(fast_interval)
+        now = time.time()
+        if now - last_full_scan >= interval:
+            log.info("Executando inventario completo agendado...")
+            run_once(cfg, dry_run=args.dry_run, partial=False)
+            last_full_scan = now
+        else:
+            run_once(cfg, dry_run=args.dry_run, partial=True)
 
 
 if __name__ == "__main__":
