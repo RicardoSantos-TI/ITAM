@@ -230,6 +230,7 @@ def summary():
 # Dashboard & Detalhes
 # ---------------------------------------------------------------------------
 @app.get("/", response_class=HTMLResponse)
+@app.get("/dashboard.html", response_class=HTMLResponse)
 def dashboard():
     try:
         with open(DASHBOARD, "r", encoding="utf-8") as f:
