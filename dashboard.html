@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Console de Ativos - ITAM Martinelli</title>
+<meta name="description" content="Console de inventario e saude de ativos de TI da Martinelli.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --primary:#1c62cb;--primary-hover:#154a9f;--primary-light:#e8eff9;
+    --ok:#77b66a;--ok-light:#eef5ec;
+    --error:#c62828;--error-light:#fceaea;
+    --warn:#e6960a;--warn-light:#fdf5e6;
+    --bg:#f1f1f1;--surface:#ffffff;
+    --border:#d9dde3;--border-light:#e8eaed;
+    --text-1:#262626;--text-2:#52575f;--text-3:#848a94;--text-dis:#b0b5bd;
+    --r-sm:6px;--r-md:8px;--r-lg:10px;--r-xl:14px;
+    --shadow:0 1px 3px #0000000f;--shadow-h:0 8px 20px #26262614;
+    --font:'Urbanist',sans-serif;--t:.15s ease
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text-1);font-family:var(--font);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .page{max-width:1280px;margin:0 auto;padding:2.5rem 3rem 5rem}
+  @media(max-width:768px){.page{padding:1.5rem 1rem 4rem}}
+  /* Header */
+  .page-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:2rem}
+  .brand{display:flex;align-items:center;gap:.75rem}
+  .brand-icon{width:44px;height:44px;background:var(--primary);border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.2rem;font-weight:800;flex:none}
+  .brand-text .eyebrow{font-size:.78rem;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px}
+  .brand-text h1{font-size:1.5rem;font-weight:700;color:#262626;line-height:1.2}
+  /* Btn */
+  .btn{display:inline-flex;align-items:center;gap:.4rem;padding:.55rem 1rem;border-radius:var(--r-lg);font-family:var(--font);font-size:.88rem;font-weight:600;cursor:pointer;border:1px solid transparent;transition:background var(--t),border-color var(--t);white-space:nowrap}
+  .btn-primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .btn-primary:hover{background:var(--primary-hover)}
+  /* KPI */
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:2rem}
+  .kpi-card{background:var(--surface);border:1px solid var(--border-light);border-radius:var(--r-xl);padding:1.25rem 1.5rem;box-shadow:var(--shadow);transition:box-shadow var(--t),transform var(--t);cursor:pointer}
+  .kpi-card:hover{box-shadow:var(--shadow-h);transform:translateY(-2px)}
+  .kpi-card.alert{background:var(--error-light);border-color:#f5c6c6}
+  .kpi-card.warn{background:var(--warn-light);border-color:#f5dda6}
+  .kpi-card.ok{background:var(--ok-light);border-color:#c2debb}
+  .kpi-label{font-size:.78rem;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:.35rem}
+  .kpi-value{font-size:2rem;font-weight:800;color:#262626;line-height:1}
+  .kpi-card.alert .kpi-value{color:var(--error)}.kpi-card.warn .kpi-value{color:var(--warn)}.kpi-card.ok .kpi-value{color:var(--ok)}
+  .kpi-sub{font-size:.78rem;color:var(--text-3);margin-top:.25rem}
+  /* Section */
+  .section-card{background:var(--surface);border:1px solid var(--border-light);border-radius:var(--r-xl);box-shadow:var(--shadow);margin-bottom:1.25rem;overflow:hidden}
+  .section-header{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border-light)}
+  .section-title-group{display:flex;align-items:center;gap:.6rem}
+  .section-title{font-size:1.05rem;font-weight:700;color:#262626}
+  .section-count{display:inline-flex;align-items:center;justify-content:center;min-width:1.4rem;height:1.4rem;padding:0 .4rem;background:var(--bg);border:1px solid var(--border);border-radius:99px;font-size:.72rem;font-weight:700;color:var(--text-2)}
+  .section-body{padding:1.25rem 1.5rem}
+  /* Controls */
+  .controls{display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;margin-bottom:1.5rem}
+  .search{flex:1;min-width:220px;position:relative}
+  .search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);stroke:var(--text-3)}
+  .search input{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text-1);border-radius:var(--r-lg);padding:.6rem .9rem .6rem 2.4rem;font-family:var(--font);font-size:.9rem;transition:border-color var(--t),box-shadow var(--t)}
+  .search input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px #1c62cb22}
+  .search input::placeholder{color:var(--text-dis)}
+  .controls-meta{font-size:.8rem;color:var(--text-3);white-space:nowrap}
+  .filter-btns{display:flex;gap:.4rem;flex-wrap:wrap}
+  .filter-btn{display:inline-flex;align-items:center;gap:.35rem;padding:.4rem .8rem;border-radius:var(--r-lg);font-family:var(--font);font-size:.8rem;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text-2);transition:background var(--t),border-color var(--t)}
+  .filter-btn:hover{background:var(--bg);border-color:var(--text-3)}
+  .filter-btn.active{background:var(--primary-light);border-color:var(--primary);color:var(--primary)}
+  .filter-btn .dot{width:7px;height:7px;border-radius:50%;flex:none}
+  .dot-ok{background:var(--ok)}.dot-warn{background:var(--warn)}.dot-error{background:var(--error)}.dot-offline{background:var(--text-dis)}.dot-total{background:var(--primary)}
+  /* Asset grid */
+  .asset-grid{display:grid;gap:.85rem;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+  .asset-item{background:var(--bg);border:1px solid var(--border-light);border-radius:var(--r-md);padding:.9rem 1rem;cursor:pointer;transition:background var(--t),border-color var(--t),box-shadow var(--t)}
+  .asset-item:hover{background:var(--primary-light);border-color:var(--primary);box-shadow:var(--shadow)}
+  .asset-item.status-critico{border-left:3px solid var(--error)}
+  .asset-item.status-atencao{border-left:3px solid var(--warn)}
+  .asset-item.status-ok{border-left:3px solid var(--ok)}
+  .asset-item.status-offline{border-left:3px solid var(--text-dis);opacity:.75}
+  .asset-top{display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;margin-bottom:.5rem}
+  .asset-name{font-size:.9rem;font-weight:700;color:#262626;word-break:break-all;display:flex;align-items:center;gap:.45rem}
+  .status-led{width:8px;height:8px;border-radius:50%;flex:none}
+  .led-ok{background:var(--ok);box-shadow:0 0 6px var(--ok)}
+  .led-warn{background:var(--warn);box-shadow:0 0 6px var(--warn)}
+  .led-critico{background:var(--error);box-shadow:0 0 6px var(--error);animation:pulse 1.4s infinite}
+  .led-offline{background:var(--text-dis)}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .asset-sub{font-size:.78rem;color:var(--text-3);margin-bottom:.6rem}
+  .asset-tag{display:inline-flex;align-items:center;padding:.2rem .55rem;background:var(--surface);border:1px solid var(--border);border-radius:99px;font-size:.72rem;font-weight:600;color:var(--text-2);white-space:nowrap}
+  .asset-tag.tag-ok{background:var(--ok-light);border-color:#c2debb;color:#3a7832}
+  .asset-tag.tag-warn{background:var(--warn-light);border-color:#f0cc7a;color:#856100}
+  .asset-tag.tag-error{background:var(--error-light);border-color:#f5c6c6;color:var(--error)}
+  /* Gauges */
+  .gauges{display:grid;gap:.5rem;margin:.6rem 0}
+  .gauge-row{display:grid;grid-template-columns:38px 1fr 40px;align-items:center;gap:.6rem}
+  .gauge-label{font-size:.72rem;font-weight:600;color:var(--text-3)}
+  .gauge-track{height:5px;background:var(--border-light);border-radius:3px;overflow:hidden}
+  .gauge-fill{height:100%;border-radius:3px;transition:width .5s ease}
+  .gauge-val{font-size:.75rem;font-weight:600;text-align:right}
+  .asset-foot{display:flex;justify-content:space-between;align-items:center;margin-top:.6rem;padding-top:.55rem;border-top:1px solid var(--border-light);font-size:.75rem;color:var(--text-3)}
+  .detail-link{font-size:.75rem;font-weight:700;color:var(--primary);text-decoration:none;opacity:0;transition:opacity var(--t);pointer-events:none}
+  .asset-item:hover .detail-link{opacity:1;pointer-events:auto}
+
+  .empty-state{text-align:center;padding:5rem 1.5rem;color:var(--text-3)}
+  .empty-state h2{font-size:1.15rem;font-weight:700;color:var(--text-2);margin-bottom:.5rem}
+  ::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="page-header">
+    <div class="brand">
+      <div class="brand-icon">M</div>
+      <div class="brand-text">
+        <p class="eyebrow">Martinelli</p>
+        <h1>Console de Ativos</h1>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="btn-refresh">&#8635; Atualizar</button>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card" id="kc-total">
+      <div class="kpi-label">Total de Ativos</div>
+      <div class="kpi-value" id="kpi-total">0</div>
+      <div class="kpi-sub">inventario</div>
+    </div>
+    <div class="kpi-card ok" id="kc-ok">
+      <div class="kpi-label">Operacionais</div>
+      <div class="kpi-value" id="kpi-ok">0</div>
+      <div class="kpi-sub">online e saudaveis</div>
+    </div>
+    <div class="kpi-card warn" id="kc-atencao">
+      <div class="kpi-label">Atencao</div>
+      <div class="kpi-value" id="kpi-atencao">0</div>
+      <div class="kpi-sub">requerem revisao</div>
+    </div>
+    <div class="kpi-card alert" id="kc-critico">
+      <div class="kpi-label">Criticos</div>
+      <div class="kpi-value" id="kpi-critico">0</div>
+      <div class="kpi-sub">falha ou risco</div>
+    </div>
+    <div class="kpi-card" id="kc-offline">
+      <div class="kpi-label">Offline</div>
+      <div class="kpi-value" id="kpi-offline">0</div>
+      <div class="kpi-sub">sem sinal</div>
+    </div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-title-group">
+        <span class="section-title">Inventario de Ativos</span>
+        <span class="section-count" id="asset-count">0</span>
+      </div>
+    </div>
+    <div class="section-body">
+      <div class="controls">
+        <label class="search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2">
+            <circle cx="11" cy="11" r="7"/>
+            <path d="m21 21-4.3-4.3"/>
+          </svg>
+          <input id="search" placeholder="Buscar host, usuario, modelo, setor..." autocomplete="off">
+        </label>
+        <div class="filter-btns">
+          <button class="filter-btn active" id="fb-all"     data-filter="all">     <span class="dot dot-total"></span> Todos</button>
+          <button class="filter-btn"        id="fb-ok"      data-filter="ok">      <span class="dot dot-ok"></span> OK</button>
+          <button class="filter-btn"        id="fb-atencao" data-filter="atencao"> <span class="dot dot-warn"></span> Atencao</button>
+          <button class="filter-btn"        id="fb-critico" data-filter="critico"> <span class="dot dot-error"></span> Critico</button>
+          <button class="filter-btn"        id="fb-offline" data-filter="offline"> <span class="dot dot-offline"></span> Offline</button>
+        </div>
+        <span class="controls-meta" id="meta">carregando...</span>
+      </div>
+      <div class="asset-grid" id="grid"></div>
+      <div class="empty-state" id="empty" style="display:none">
+        <h2>Nenhum ativo encontrado</h2>
+        <p>Instale o agente numa maquina e aponte-o para este servidor.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<script>
+(function(){
+  var qs = function(s){ return document.querySelector(s); };
+
+  var STATUS_LABEL = { ok:'Operacional', atencao:'Atencao', critico:'Critico', offline:'Offline' };
+  var ST = {
+    ok:      { led:'led-ok',      tag:'tag-ok' },
+    atencao: { led:'led-warn',    tag:'tag-warn' },
+    critico: { led:'led-critico', tag:'tag-error' },
+    offline: { led:'led-offline', tag:'' }
+  };
+
+  var assets = [], activeFilter = 'all', searchQuery = '';
+
+  function fmtBytes(b){
+    if(!b) return '---';
+    var u=['B','KB','MB','GB','TB'], i=0; b=Number(b);
+    while(b>=1024&&i<u.length-1){b/=1024;i++;}
+    return b.toFixed(i?1:0)+' '+u[i];
+  }
+  function gc(v){
+    if(v==null) return 'var(--text-dis)';
+    if(v>=90) return 'var(--error)';
+    if(v>=75) return 'var(--warn)';
+    return 'var(--ok)';
+  }
+  function ago(iso){
+    if(!iso) return '---';
+    var s=(Date.now()-new Date(iso))/1000;
+    if(s<90) return 'agora';
+    if(s<5400) return Math.round(s/60)+' min';
+    if(s<172800) return Math.round(s/3600)+' h';
+    return Math.round(s/86400)+' d';
+  }
+  function gH(label,val){
+    var w=val==null?0:Math.min(100,val), c=gc(val);
+    return '<div class="gauge-row">'
+      +'<span class="gauge-label">'+label+'</span>'
+      +'<div class="gauge-track"><div class="gauge-fill" style="width:'+w+'%;background:'+c+'"></div></div>'
+      +'<span class="gauge-val" style="color:'+c+'">'+(val==null?'---':Math.round(val)+'%')+'</span>'
+      +'</div>';
+  }
+  function kv(label,val){
+    if(val==null||val==='') return '';
+    return '<dt>'+label+'</dt><dd>'+val+'</dd>';
+  }
+
+  function renderKPIs(s){
+    qs('#kpi-total').textContent   = s.total   || 0;
+    qs('#kpi-ok').textContent      = s.ok      || 0;
+    qs('#kpi-atencao').textContent = s.atencao || 0;
+    qs('#kpi-critico').textContent = s.critico || 0;
+    qs('#kpi-offline').textContent = s.offline || 0;
+  }
+
+  function matches(a){
+    if(activeFilter!=='all'&&a.status!==activeFilter) return false;
+    if(!searchQuery) return true;
+    var hay=[a.hostname,a.user,a.os,a.tags&&a.tags.setor].join(' ').toLowerCase();
+    return hay.indexOf(searchQuery)>-1;
+  }
+
+  function render(){
+    var list=assets.filter(matches);
+    qs('#asset-count').textContent=list.length;
+    qs('#empty').style.display=assets.length===0?'block':'none';
+    qs('#grid').innerHTML=list.map(function(a){
+      var st=ST[a.status]||ST.ok;
+      return '<article class="asset-item status-'+a.status+'" data-id="'+a.asset_id+'">'
+        +'<div class="asset-top">'
+        +'<div class="asset-name"><span class="status-led '+st.led+'"></span>'+(a.hostname||'---')+'</div>'
+        +(a.tags&&a.tags.setor?'<span class="asset-tag '+st.tag+'">'+a.tags.setor+'</span>':'')
+        +'</div>'
+        +'<div class="asset-sub">'+(a.os||'SO desconhecido')+'</div>'
+        +'<div class="gauges">'+gH('CPU',a.cpu)+gH('RAM',a.memory)+gH('DISK',a.disk)+'</div>'
+        +'<div class="asset-foot"><span>'+(a.user||'---')+'</span>'
+        +'<div style="display:flex;align-items:center;gap:.5rem">'
+        +'<span>visto '+ago(a.last_seen)+'</span>'
+        +'<a class="detail-link" href="ativo-detalhes.html?id='+a.asset_id+'" onclick="event.stopPropagation()">Ver detalhes &rarr;</a>'
+        +'</div></div>'
+        +'</article>';
+    }).join('');
+
+    qs('#grid').querySelectorAll('.asset-item').forEach(function(el){
+      el.addEventListener('click',function(){
+        window.location.href = 'ativo-detalhes.html?id=' + encodeURIComponent(el.dataset.id);
+      });
+    });
+  }
+
+  function setFilter(f){
+    activeFilter=f;
+    document.querySelectorAll('.filter-btn').forEach(function(b){ b.classList.remove('active'); });
+    qs('#fb-'+f).classList.add('active');
+    render();
+  }
+
+  function loadDemo(){
+    var now=Date.now();
+    var d=[
+      {asset_id:'1',hostname:'WS-JURIDICO-01', os:'Windows 11 Pro',   status:'ok',      cpu:42,  memory:61,  disk:55,  user:'ana.souza',    last_seen:new Date(now-120000).toISOString(),  tags:{setor:'Juridico'}},
+      {asset_id:'2',hostname:'WS-ADM-02',       os:'Windows 10 Pro',   status:'atencao', cpu:78,  memory:82,  disk:67,  user:'carlos.lima',  last_seen:new Date(now-900000).toISOString(),  tags:{setor:'Administrativo'}},
+      {asset_id:'3',hostname:'SRV-FILES-01',    os:'Ubuntu 22.04 LTS', status:'ok',      cpu:22,  memory:45,  disk:71,  user:'',             last_seen:new Date(now-30000).toISOString(),   tags:{setor:'TI'}},
+      {asset_id:'4',hostname:'WS-TI-RICBSAN',   os:'Windows 11 Pro',   status:'ok',      cpu:35,  memory:52,  disk:33,  user:'ricardo',      last_seen:new Date(now-5000).toISOString(),    tags:{setor:'TI'}},
+      {asset_id:'5',hostname:'WS-CONTAB-03',    os:'Windows 10 Pro',   status:'critico', cpu:98,  memory:95,  disk:91,  user:'beatriz.melo', last_seen:new Date(now-200000).toISOString(),  tags:{setor:'Contabilidade'}},
+      {asset_id:'6',hostname:'WS-RH-04',        os:'Windows 11 Pro',   status:'offline', cpu:null,memory:null,disk:null,user:'',             last_seen:new Date(now-7200000).toISOString(), tags:{setor:'RH'}},
+      {asset_id:'7',hostname:'WS-COMERCIAL-01', os:'Windows 10 Pro',   status:'ok',      cpu:28,  memory:44,  disk:58,  user:'marcos.dias',  last_seen:new Date(now-60000).toISOString(),   tags:{setor:'Comercial'}},
+      {asset_id:'8',hostname:'NB-DIRETORIA-01', os:'macOS Sequoia',    status:'ok',      cpu:18,  memory:39,  disk:27,  user:'diretoria',    last_seen:new Date(now-15000).toISOString(),   tags:{setor:'Diretoria'}}
+    ];
+    var sm={
+      total:d.length,
+      ok:d.filter(function(a){return a.status==='ok';}).length,
+      atencao:d.filter(function(a){return a.status==='atencao';}).length,
+      critico:d.filter(function(a){return a.status==='critico';}).length,
+      offline:d.filter(function(a){return a.status==='offline';}).length
+    };
+    assets=d; renderKPIs(sm); render();
+  }
+
+  function load(){
+    Promise.all([
+      fetch('/api/assets').then(function(r){return r.json();}),
+      fetch('/api/summary').then(function(r){return r.json();})
+    ]).then(function(results){
+      assets=results[0];
+      renderKPIs(results[1]);
+      render();
+      qs('#meta').textContent=assets.length+' ativo(s) - '+new Date().toLocaleTimeString('pt-BR');
+    }).catch(function(){
+      qs('#meta').textContent='sem conexao - modo demonstracao';
+      loadDemo();
+    });
+  }
+
+
+  qs('#search').addEventListener('input', function(e){ searchQuery=e.target.value.toLowerCase().trim(); render(); });
+  qs('#btn-refresh').addEventListener('click', load);
+  document.querySelectorAll('.filter-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){ setFilter(btn.dataset.filter); });
+  });
+
+  load();
+  setInterval(load, 30000);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+psutil>=5.9
+requests>=2.31
+# Somente Windows (ignore em Linux/macOS):
+WMI>=1.5.1 ; sys_platform == "win32"
+pywin32>=306 ; sys_platform == "win32"

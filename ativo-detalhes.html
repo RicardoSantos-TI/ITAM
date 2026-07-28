@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Detalhes do Ativo · ITAM Martinelli</title>
+<meta name="description" content="Pagina de detalhes de ativo de TI — inventario Martinelli.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ── Tokens ─────────────────────────────────────────────────── */
+:root{
+  --primary:#1c62cb;--primary-hover:#154a9f;--primary-light:#e8eff9;
+  --ok:#77b66a;--ok-light:#eef5ec;--ok-border:#c2debb;
+  --error:#c62828;--error-light:#fceaea;--error-border:#f5c6c6;
+  --warn:#e6960a;--warn-light:#fdf5e6;--warn-border:#f0cc7a;
+  --bg:#f1f1f1;--surface:#fff;
+  --border:#d9dde3;--border-light:#e8eaed;
+  --text-1:#262626;--text-2:#52575f;--text-3:#848a94;--text-dis:#b0b5bd;
+  --r-sm:6px;--r-md:8px;--r-lg:10px;--r-xl:14px;--r-2xl:18px;
+  --shadow:0 1px 3px #0000000f;--shadow-md:0 4px 12px #26262610;--shadow-lg:0 12px 32px #26262618;
+  --font:'Urbanist',sans-serif;--t:.15s ease
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text-1);font-family:var(--font);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+
+/* ── Layout ─────────────────────────────────────────────────── */
+.page{max-width:1400px;margin:0 auto;padding:2.5rem 3rem 6rem}
+@media(max-width:768px){.page{padding:1.25rem 1rem 4rem}}
+.main-container{display:grid;grid-template-columns:420px 1fr;gap:2rem}
+@media(max-width:1024px){.main-container{grid-template-columns:1fr}}
+@media(max-width:768px){.main-container{grid-template-columns:1fr}}
+
+/* ── Top nav ─────────────────────────────────────────────────── */
+.topnav{display:flex;align-items:center;gap:.75rem;margin-bottom:2rem;flex-wrap:wrap}
+.back-btn{display:inline-flex;align-items:center;gap:.4rem;padding:.45rem .85rem;border-radius:var(--r-lg);border:1px solid var(--border);background:var(--surface);color:var(--text-2);font-family:var(--font);font-size:.85rem;font-weight:600;cursor:pointer;transition:background var(--t),border-color var(--t);text-decoration:none}
+.back-btn:hover{background:var(--bg);border-color:var(--text-3)}
+.back-btn svg{stroke:currentColor;flex:none}
+.breadcrumb{display:flex;align-items:center;gap:.4rem;font-size:.82rem;color:var(--text-3)}
+.breadcrumb a{color:var(--primary);text-decoration:none;font-weight:600}
+.breadcrumb a:hover{text-decoration:underline}
+.breadcrumb span{color:var(--text-dis)}
+.brand{display:flex;align-items:center;gap:.6rem;margin-left:auto}
+.brand-icon{width:36px;height:36px;background:var(--primary);border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1rem;font-weight:800;flex:none}
+.brand-label{font-size:.78rem;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px}
+
+/* ── Hero ─────────────────────────────────────────────────────── */
+.hero{background:var(--surface);border:1px solid var(--border-light);border-radius:var(--r-2xl);box-shadow:var(--shadow-md);overflow:hidden}
+.hero-header{background:linear-gradient(135deg,#ff9500 0%,#ffb347 100%);height:140px}
+.hero-content{padding:1.5rem;position:relative;margin-top:-60px;z-index:1}
+.hero-avatar{width:120px;height:120px;border-radius:var(--r-xl);border:4px solid var(--surface);background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:3.5rem;margin-bottom:1rem;box-shadow:var(--shadow-lg);margin-left:auto;margin-right:auto}
+.hero-name{font-size:1.5rem;font-weight:800;color:var(--text-1);text-align:center;margin-bottom:.3rem}
+.hero-company{font-size:.85rem;font-weight:600;color:var(--text-3);text-align:center;margin-bottom:.2rem}
+.hero-role{font-size:.8rem;color:var(--text-3);text-align:center;margin-bottom:1rem}
+.hero-meta{display:flex;justify-content:space-between;align-items:center;font-size:.78rem;color:var(--text-3);padding-bottom:1rem;border-bottom:1px solid var(--border-light);margin-bottom:1rem}
+.hero-meta-item{display:flex;flex-direction:column}
+.hero-meta-label{font-size:.7rem;text-transform:uppercase;font-weight:700;color:var(--text-dis);margin-bottom:.2rem}
+.hero-meta-value{font-weight:600;color:var(--text-1)}
+.hero-actions{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1.5rem}
+.action-btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;padding:.6rem;border-radius:var(--r-lg);font-family:var(--font);font-size:.8rem;font-weight:700;cursor:pointer;border:1px solid transparent;transition:background var(--t),border-color var(--t),box-shadow var(--t);text-decoration:none}
+.action-btn-primary{background:#1c62cb;color:#fff;border-color:#1c62cb}
+.action-btn-primary:hover{background:#154a9f}
+.action-btn-secondary{background:var(--bg);color:var(--text-1);border-color:var(--border)}
+.action-btn-secondary:hover{background:#f1f1f1;border-color:var(--text-3)}
+
+/* ── Left panel sections ─────────────────────────────────────── */
+.left-panel{display:flex;flex-direction:column;gap:1.25rem}
+.info-section{background:var(--surface);border:1px solid var(--border-light);border-radius:var(--r-xl);box-shadow:var(--shadow);overflow:hidden}
+.info-header{display:flex;align-items:center;gap:.6rem;padding:.85rem 1.15rem;border-bottom:1px solid var(--border-light);background:var(--primary-light)}
+.info-icon{font-size:1.2rem;flex:none}
+.info-title{font-size:.85rem;font-weight:700;color:var(--text-1);text-transform:uppercase}
+.info-body{padding:1rem 1.15rem}
+.info-item{display:flex;align-items:center;gap:.6rem;padding:.5rem 0;border-bottom:1px solid var(--border-light)}
+.info-item:last-child{border-bottom:none}
+.info-label{font-size:.72rem;color:var(--text-3);min-width:60px;font-weight:600;text-transform:uppercase}
+.info-value{font-size:.82rem;color:var(--text-1);font-weight:600;word-break:break-all}
+.social-links{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;padding:.75rem 0}
+.social-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;cursor:pointer;transition:transform .2s,filter .2s}
+.social-icon:hover{transform:scale(1.1);filter:brightness(0.9)}
+
+/* ── Right panel content ─────────────────────────────────────── */
+.right-panel{display:flex;flex-direction:column;gap:1.5rem}
+.tab-bar{display:flex;gap:.5rem;border-bottom:2px solid var(--border-light);margin-bottom:1.5rem;background:var(--surface);padding:.5rem;border-radius:var(--r-lg)}
+.tab-btn{padding:.6rem 1rem;border:none;background:transparent;color:var(--text-3);font-size:.85rem;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;transition:color var(--t),border-color var(--t);white-space:nowrap}
+.tab-btn.active{color:var(--primary);border-bottom-color:var(--primary)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+/* ── Health overview ─────────────────────────────────────────── */
+.health-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1rem;margin-bottom:1.5rem}
+
+/* ── KPI bar ─────────────────────────────────────────────────── */
+.kpi-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;margin-bottom:1.5rem}
+.kpi-card{background:var(--surface);border:1px solid var(--border-light);border-radius:var(--r-xl);padding:1.1rem 1.35rem;box-shadow:var(--shadow)}
+.kpi-card.ok   {background:var(--ok-light);border-color:var(--ok-border)}
+.kpi-card.warn {background:var(--warn-light);border-color:var(--warn-border)}
+.kpi-card.crit {background:var(--error-light);border-color:var(--error-border)}
+.kpi-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-3);margin-bottom:.3rem}
+.kpi-val{font-size:1.75rem;font-weight:800;line-height:1;color:var(--text-1)}
+.kpi-card.ok  .kpi-val{color:#3a7832}
+.kpi-card.warn .kpi-val{color:#856100}
+.kpi-card.crit .kpi-val{color:var(--error)}
+.kpi-sub{font-size:.72rem;color:var(--text-3);margin-top:.2rem}
+
+/* ── Content grid ────────────────────────────────────────────── */
+.content-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
+@media(max-width:860px){.content-grid{grid-template-columns:1fr}}
+.col-full{grid-column:1/-1}
+
+/* ── Section card ────────────────────────────────────────────── */
+.sec-card{background:var(--surface);border:1px solid var(--border-light);border-radius:var(--r-xl);box-shadow:var(--shadow);overflow:hidden}
+.sec-head{display:flex;align-items:center;gap:.6rem;padding:.9rem 1.35rem;border-bottom:1px solid var(--border-light)}
+.sec-icon{width:28px;height:28px;border-radius:var(--r-md);background:var(--primary-light);display:flex;align-items:center;justify-content:center;flex:none;font-size:.95rem}
+.sec-title{font-size:.88rem;font-weight:700;color:var(--text-1)}
+.sec-count{display:inline-flex;align-items:center;justify-content:center;min-width:1.3rem;height:1.3rem;padding:0 .35rem;background:var(--bg);border:1px solid var(--border);border-radius:99px;font-size:.68rem;font-weight:700;color:var(--text-2);margin-left:auto}
+.sec-body{padding:1rem 1.35rem}
+
+/* ── KV table ────────────────────────────────────────────────── */
+.kv{display:grid;grid-template-columns:auto 1fr;gap:.45rem .9rem;font-size:.85rem}
+.kv dt{color:var(--text-3);white-space:nowrap;font-weight:500}
+.kv dd{color:var(--text-1);font-weight:600;word-break:break-all}
+.kv-sep{grid-column:1/-1;height:1px;background:var(--border-light);margin:.25rem 0}
+
+/* ── Gauge ──────────────────────────────────────────────────── */
+.gauge-row{display:grid;grid-template-columns:40px 1fr 44px;align-items:center;gap:.6rem;margin-bottom:.55rem}
+.gauge-row:last-child{margin-bottom:0}
+.g-label{font-size:.75rem;font-weight:700;color:var(--text-3)}
+.g-track{height:7px;background:var(--border-light);border-radius:4px;overflow:hidden}
+.g-fill{height:100%;border-radius:4px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.g-val{font-size:.82rem;font-weight:700;text-align:right}
+
+/* ── Dev list ────────────────────────────────────────────────── */
+.dev-list{display:grid;gap:.4rem}
+.dev-item{background:var(--bg);border:1px solid var(--border-light);border-radius:var(--r-md);padding:.55rem .85rem;font-size:.82rem;color:var(--text-2)}
+.dev-item strong{color:var(--text-1);font-weight:700;display:block;margin-bottom:.1rem}
+.dev-item span{color:var(--text-3);font-size:.75rem}
+
+/* ── Antivirus item ─────────────────────────────────────────── */
+.av-item{display:flex;align-items:center;gap:.7rem;padding:.55rem .85rem;background:var(--bg);border:1px solid var(--border-light);border-radius:var(--r-md);margin-bottom:.4rem}
+.av-item:last-child{margin-bottom:0}
+.av-icon{font-size:1.1rem;flex:none}
+.av-name{font-size:.85rem;font-weight:700;color:var(--text-1)}
+.av-meta{font-size:.75rem;color:var(--text-3)}
+.av-badge{padding:.15rem .5rem;border-radius:99px;font-size:.7rem;font-weight:700;margin-left:auto;flex:none;white-space:nowrap}
+.av-badge.active{background:var(--ok-light);border:1px solid var(--ok-border);color:#3a7832}
+.av-badge.inactive{background:var(--error-light);border:1px solid var(--error-border);color:var(--error)}
+
+/* ── Software table ─────────────────────────────────────────── */
+.sw-search-wrap{position:relative;margin-bottom:.75rem}
+.sw-search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);stroke:var(--text-3)}
+.sw-search{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text-1);border-radius:var(--r-lg);padding:.5rem .75rem .5rem 2.1rem;font-family:var(--font);font-size:.85rem;transition:border-color var(--t),box-shadow var(--t)}
+.sw-search:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px #1c62cb22;background:var(--surface)}
+.sw-search::placeholder{color:var(--text-dis)}
+.sw-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.sw-table th{padding:.45rem .5rem;text-align:left;font-size:.72rem;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid var(--border-light)}
+.sw-table td{padding:.4rem .5rem;border-bottom:1px solid var(--border-light);color:var(--text-1)}
+.sw-table td:last-child{color:var(--text-3);text-align:right;white-space:nowrap;font-size:.78rem}
+.sw-table tbody tr:hover{background:var(--primary-light)}
+.sw-count{font-size:.78rem;color:var(--text-3);margin-top:.6rem;text-align:right}
+
+/* ── Network interface ──────────────────────────────────────── */
+.net-item{background:var(--bg);border:1px solid var(--border-light);border-radius:var(--r-md);padding:.6rem .85rem;margin-bottom:.4rem}
+.net-item:last-child{margin-bottom:0}
+.net-name{font-size:.85rem;font-weight:700;color:var(--text-1);margin-bottom:.2rem}
+.net-pills{display:flex;flex-wrap:wrap;gap:.35rem}
+.net-pill{display:inline-flex;align-items:center;gap:.25rem;padding:.18rem .5rem;background:var(--surface);border:1px solid var(--border);border-radius:99px;font-size:.72rem;font-weight:600;color:var(--text-2)}
+.net-pill.ip{border-color:#c2d9f5;background:#eaf2ff;color:#1a5bb0}
+.net-pill.mac{border-color:var(--border);color:var(--text-3)}
+
+/* ── Disk bar ────────────────────────────────────────────────── */
+.disk-item{background:var(--bg);border:1px solid var(--border-light);border-radius:var(--r-md);padding:.7rem .9rem;margin-bottom:.4rem}
+.disk-item:last-child{margin-bottom:0}
+.disk-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.45rem}
+.disk-name{font-size:.85rem;font-weight:700;color:var(--text-1)}
+.disk-meta{font-size:.75rem;color:var(--text-3)}
+.disk-track{height:6px;background:var(--border-light);border-radius:3px;overflow:hidden}
+.disk-fill{height:100%;border-radius:3px;background:var(--primary);transition:width .6s ease}
+
+/* ── Loading / Empty ─────────────────────────────────────────── */
+.loading-state{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:1rem;color:var(--text-3)}
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error-state{text-align:center;padding:5rem 2rem;color:var(--text-3)}
+.error-state h2{font-size:1.2rem;font-weight:700;color:var(--text-2);margin-bottom:.5rem}
+.empty-text{font-size:.82rem;color:var(--text-3);font-style:italic;padding:.5rem 0}
+
+/* ── Scrollbar ──────────────────────────────────────────────── */
+::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+</style>
+</head>
+<body>
+
+<div class="page" id="page">
+
+  <!-- ── Top nav ────────────────────────────────────────────── -->
+  <div class="topnav">
+    <a class="back-btn" href="dashboard.html" id="back-link">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2.5"><path d="M19 12H5M5 12l7-7M5 12l7 7"/></svg>
+      Voltar
+    </a>
+    <div class="breadcrumb">
+      <a href="dashboard.html">Inventario</a>
+      <span>›</span>
+      <span id="bc-hostname">Ativo</span>
+    </div>
+    <div class="brand">
+      <div class="brand-icon">M</div>
+      <span class="brand-label">Martinelli</span>
+    </div>
+  </div>
+
+  <!-- ── Content (filled by JS) ─────────────────────────────── -->
+  <div id="content" class="main-container">
+    <div class="loading-state" style="grid-column:1/-1">
+      <div class="spinner"></div>
+      <span>Carregando dados do ativo...</span>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+(function(){
+  /* ── helpers ─────────────────────────────────────────────── */
+  var qs=function(s,ctx){return (ctx||document).querySelector(s);};
+
+  var fmtBytes=function(b){
+    if(!b)return '---';
+    var u=['B','KB','MB','GB','TB'],i=0; b=Number(b);
+    while(b>=1024&&i<u.length-1){b/=1024;i++;}
+    return b.toFixed(i?1:0)+' '+u[i];
+  };
+  var gc=function(v){
+    if(v==null)return 'var(--text-dis)';
+    if(v>=90)return 'var(--error)';
+    if(v>=75)return 'var(--warn)';
+    return 'var(--ok)';
+  };
+  var gcClass=function(v){
+    if(v==null)return '';
+    if(v>=90)return 'crit';
+    if(v>=75)return 'warn';
+    return 'ok';
+  };
+  var ago=function(iso){
+    if(!iso)return '---';
+    var s=(Date.now()-new Date(iso))/1000;
+    if(s<90)return 'agora';
+    if(s<5400)return Math.round(s/60)+' min atras';
+    if(s<172800)return Math.round(s/3600)+' h atras';
+    return Math.round(s/86400)+' dias atras';
+  };
+  var kv=function(l,v){
+    if(v==null||v==='')return '';
+    return '<dt>'+l+'</dt><dd>'+v+'</dd>';
+  };
+  var gH=function(label,val){
+    var w=val==null?0:Math.min(100,val), c=gc(val);
+    return '<div class="gauge-row">'
+      +'<span class="g-label">'+label+'</span>'
+      +'<div class="g-track"><div class="g-fill" style="width:'+w+'%;background:'+c+'"></div></div>'
+      +'<span class="g-val" style="color:'+c+'">'+(val==null?'---':Math.round(val)+'%')+'</span>'
+      +'</div>';
+  };
+
+  var STATUS_LABEL={ok:'Operacional',atencao:'Atencao',critico:'Critico',offline:'Offline'};
+  var LED_CLS={ok:'led-ok',atencao:'led-warn',critico:'led-critico',offline:'led-offline'};
+  var HERO_ICON={ok:'💻',atencao:'⚠️',critico:'🔴',offline:'🔌'};
+
+  /* ── URL param ───────────────────────────────────────────── */
+  var params=new URLSearchParams(window.location.search);
+  var assetId=params.get('id');
+
+  /* ── Demo asset ──────────────────────────────────────────── */
+  var DEMO={
+    '1':{asset_id:'1',hostname:'WS-JURIDICO-01',status:'ok',last_seen:new Date(Date.now()-120000).toISOString(),
+      tags:{setor:'Juridico'},
+      system:{manufacturer:'Dell',model:'OptiPlex 7090',bios_serial:'DL7090-0001',domain:'martinelli.local',logged_user:'ana.souza',os_caption:'Windows 11 Pro 23H2',uptime_seconds:342000},
+      hardware:{
+        cpu:{name:'Intel Core i7-10700',cores_physical:8,cores_logical:16,freq_mhz:2900},
+        memory:{total_bytes:17179869184},
+        gpu:[{name:'Intel UHD Graphics 630'}],
+        disks:[{model:'Samsung SSD 870 EVO 512GB',size_bytes:512110190592,interface:'SATA'},{model:'WD Blue 1TB',size_bytes:1000204886016,interface:'SATA'}]
+      },
+      health:{cpu_percent:42,memory_percent:61,disk_worst_percent:55,pending_reboot:false,battery_percent:null,temp_max_c:48,
+        antivirus:[{name:'Microsoft Defender',enabled:true,up_to_date:true}]
+      },
+      network:{interfaces:[
+        {name:'Ethernet',ipv4:['192.168.1.101'],mac:'00:1A:2B:3C:4D:5E'},
+        {name:'Wi-Fi',ipv4:['192.168.1.115'],mac:'AA:BB:CC:DD:EE:FF'}
+      ]},
+      devices:{
+        usb:[{name:'Logitech USB Keyboard'},{name:'Logitech USB Mouse'},{name:'USB Hub 3.0'}],
+        monitors:[{product:'Dell P2422H',serial:'SN12345'},{product:'Dell P2422H',serial:'SN67890'}],
+        removable_drives:[]
+      },
+      software:[
+        {name:'Microsoft 365',version:'16.0.17126'},
+        {name:'Google Chrome',version:'126.0.6478.114'},
+        {name:'Adobe Reader DC',version:'24.002.20857'},
+        {name:'7-Zip',version:'23.01'},
+        {name:'VLC Media Player',version:'3.0.20'},
+        {name:'Zoom',version:'5.17.11'},
+        {name:'Teams',version:'1.7.0.27559'},
+        {name:'Notepad++',version:'8.6.5'},
+        {name:'WinRAR',version:'7.01'},
+        {name:'Slack',version:'4.38.125'},
+        {name:'Python 3.11',version:'3.11.9'},
+        {name:'Node.js',version:'20.14.0'},
+      ]
+    },
+    '2':{asset_id:'2',hostname:'WS-ADM-02',status:'atencao',last_seen:new Date(Date.now()-900000).toISOString(),
+      tags:{setor:'Administrativo'},
+      system:{manufacturer:'HP',model:'EliteDesk 800 G6',bios_serial:'HP800G6-0002',domain:'martinelli.local',logged_user:'carlos.lima',os_caption:'Windows 10 Pro 22H2',uptime_seconds:86400},
+      hardware:{cpu:{name:'Intel Core i5-10500',cores_physical:6,cores_logical:12,freq_mhz:3100},memory:{total_bytes:8589934592},gpu:[{name:'Intel UHD Graphics 630'}],disks:[{model:'Kingston A400 240GB',size_bytes:240057409536,interface:'SATA'}]},
+      health:{cpu_percent:78,memory_percent:82,disk_worst_percent:67,pending_reboot:true,battery_percent:null,temp_max_c:71,antivirus:[{name:'Microsoft Defender',enabled:true,up_to_date:false}]},
+      network:{interfaces:[{name:'Ethernet',ipv4:['192.168.1.102'],mac:'00:2B:3C:4D:5E:6F'}]},
+      devices:{usb:[{name:'USB Keyboard'},{name:'USB Mouse'}],monitors:[{product:'HP EliteDisplay E243',serial:'SN11111'}],removable_drives:[]},
+      software:[{name:'Microsoft 365',version:'16.0.17100'},{name:'Google Chrome',version:'124.0'},{name:'Adobe Reader',version:'23.0'}]
+    },
+    '5':{asset_id:'5',hostname:'WS-CONTAB-03',status:'critico',last_seen:new Date(Date.now()-200000).toISOString(),
+      tags:{setor:'Contabilidade'},
+      system:{manufacturer:'Lenovo',model:'ThinkCentre M70q',bios_serial:'LN70Q-0005',domain:'martinelli.local',logged_user:'beatriz.melo',os_caption:'Windows 10 Pro 21H2',uptime_seconds:604800},
+      hardware:{cpu:{name:'Intel Core i3-10100',cores_physical:4,cores_logical:8,freq_mhz:3600},memory:{total_bytes:4294967296},gpu:[{name:'Intel UHD Graphics 630'}],disks:[{model:'Seagate 500GB HDD',size_bytes:500107862016,interface:'SATA'}]},
+      health:{cpu_percent:98,memory_percent:95,disk_worst_percent:91,pending_reboot:true,battery_percent:null,temp_max_c:89,antivirus:[{name:'Microsoft Defender',enabled:false,up_to_date:false}]},
+      network:{interfaces:[{name:'Ethernet',ipv4:['192.168.1.105'],mac:'00:5E:6F:7A:8B:9C'}]},
+      devices:{usb:[{name:'USB Pendrive 16GB'}],monitors:[{product:'Generic Monitor',serial:''}],removable_drives:[{device:'E:',total_bytes:16000000000}]},
+      software:[{name:'Microsoft Excel',version:'16.0'},{name:'Fiscal Software',version:'2.3.1'}]
+    }
+  };
+
+  /* ── Render ──────────────────────────────────────────────── */
+  function renderPage(a){
+    var sys=a.system||{}, hw=a.hardware||{}, dev=a.devices||{},
+        net=a.network||{}, health=a.health||{}, sw=a.software||[];
+
+    /* title */
+    document.title=(a.hostname||'Ativo')+' · ITAM Martinelli';
+    qs('#bc-hostname').textContent=a.hostname||'---';
+
+    var cpuVal =health.cpu_percent!=null?health.cpu_percent:(a.cpu!=null?a.cpu:null);
+    var ramVal =health.memory_percent!=null?health.memory_percent:(a.memory!=null?a.memory:null);
+    var diskVal=health.disk_worst_percent!=null?health.disk_worst_percent:(a.disk!=null?a.disk:null);
+    var st=a.status||'ok';
+    var st2=st==='atencao'?'atencao':st;
+
+    var heroIconCls = st==='atencao'?'warn':(st==='critico'?'critico':(st==='offline'?'offline':'ok'));
+
+    /* ── AV ── */
+    var avHTML=(health.antivirus||[]).map(function(x){
+      var active=x.enabled!==false;
+      return '<div class="av-item">'
+        +'<span class="av-icon">'+(active?'🛡️':'⚠️')+'</span>'
+        +'<div><div class="av-name">'+x.name+'</div>'
+        +'<div class="av-meta">'+(x.up_to_date?'Definicoes atualizadas':'Definicoes desatualizadas')+'</div></div>'
+        +'<span class="av-badge '+(active?'active':'inactive')+'">'+(active?'Ativo':'Inativo')+'</span>'
+        +'</div>';
+    }).join('')||'<p class="empty-text">Nenhum antivirus detectado</p>';
+
+    /* ── USB ── */
+    var usbHTML=(dev.usb||[]).map(function(u){
+      return '<div class="dev-item"><strong>'+(u.name||u.product||'Dispositivo USB')+'</strong>'
+        +(u.manufacturer?'<span>'+u.manufacturer+'</span>':'')+'</div>';
+    }).join('')||'<p class="empty-text">Nenhum dispositivo USB</p>';
+
+    /* ── Monitors ── */
+    var monHTML=(dev.monitors||[]).filter(function(m){return m.product||m.name;}).map(function(m){
+      return '<div class="dev-item"><strong>'+(m.product||m.name)+'</strong>'
+        +(m.serial?'<span>S/N: '+m.serial+'</span>':'')+'</div>';
+    }).join('')||'<p class="empty-text">Nenhum monitor detectado</p>';
+
+    /* ── Removable ── */
+    var remHTML=(dev.removable_drives||[]).map(function(r){
+      return '<div class="dev-item"><strong>'+r.device+'</strong>'
+        +(r.total_bytes?'<span>'+fmtBytes(r.total_bytes)+'</span>':'')+'</div>';
+    }).join('')||'<p class="empty-text">Nenhum drive removivel</p>';
+
+    /* ── Disks ── */
+    var disksHTML=(hw.disks||[]).map(function(dk){
+      return '<div class="disk-item">'
+        +'<div class="disk-top"><span class="disk-name">'+(dk.model||'Disco')+'</span>'
+        +'<span class="disk-meta">'+(dk.interface||'')+(dk.size_bytes?' · '+fmtBytes(dk.size_bytes):'')+'</span></div>'
+        +'<div class="disk-track"><div class="disk-fill" style="width:60%"></div></div>'
+        +'</div>';
+    }).join('')||'<p class="empty-text">Sem informacoes de disco</p>';
+
+    /* ── Network ── */
+    var netHTML=(net.interfaces||[]).filter(function(i){return i.ipv4&&i.ipv4.length;}).map(function(i){
+      var pills=i.ipv4.map(function(ip){return '<span class="net-pill ip">'+ip+'</span>';}).join('');
+      if(i.mac) pills+='<span class="net-pill mac">'+i.mac+'</span>';
+      return '<div class="net-item"><div class="net-name">'+i.name+'</div><div class="net-pills">'+pills+'</div></div>';
+    }).join('')||'<p class="empty-text">Sem interfaces de rede</p>';
+
+    /* ── Software (with search) ── */
+    var swId='sw-list-'+Date.now();
+    var swSearchId='sw-search-'+Date.now();
+    var swCountId='sw-count-'+Date.now();
+    var swHTML='<div class="sw-search-wrap">'
+      +'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>'
+      +'<input class="sw-search" id="'+swSearchId+'" placeholder="Filtrar software..." autocomplete="off">'
+      +'</div>'
+      +'<table class="sw-table">'
+      +'<thead><tr><th>Nome</th><th>Versao</th></tr></thead>'
+      +'<tbody id="'+swId+'"></tbody>'
+      +'</table>'
+      +'<div class="sw-count" id="'+swCountId+'">'+sw.length+' programas</div>';
+
+    /* ── LEFT PANEL ─────────────────────────── */
+    var leftPanelHTML=
+      /* HERO CARD */
+      '<div class="hero">'
+      +'<div class="hero-header"></div>'
+      +'<div class="hero-content">'
+      +'<div class="hero-avatar">'+HERO_ICON[st]+'</div>'
+      +'<div class="hero-name">'+(a.hostname||'---')+'</div>'
+      +'<div class="hero-company">'+(a.tags&&a.tags.setor?a.tags.setor:'Ativo de TI')+'</div>'
+      +'<div class="hero-role" style="color:var(--text-2)">ID: '+a.asset_id+'</div>'
+      +'<div class="hero-meta">'
+      +'<div class="hero-meta-item"><span class="hero-meta-label">Status</span><span class="hero-meta-value">'+STATUS_LABEL[st]+'</span></div>'
+      +'<div class="hero-meta-item"><span class="hero-meta-label">Visto</span><span class="hero-meta-value">'+ago(a.last_seen)+'</span></div>'
+      +'</div>'
+      +'<div class="hero-actions">'
+      +'<button class="action-btn action-btn-primary" onclick="alert(\'Chamar suporte\')">📞 Chamar</button>'
+      +'<button class="action-btn action-btn-secondary" onclick="alert(\'Abrir ticket\')">📝 Ticket</button>'
+      +'</div>'
+      +'</div>'
+      +'</div>'
+
+      /* BASIC INFO */
+      +'<div class="info-section">'
+      +'<div class="info-header"><span class="info-icon">🏷️</span><span class="info-title">Informacoes</span></div>'
+      +'<div class="info-body">'
+      +('<div class="info-item"><span class="info-label">Fabricante</span><span class="info-value">'+(sys.manufacturer||'---')+'</span></div>')
+      +('<div class="info-item"><span class="info-label">Modelo</span><span class="info-value">'+(sys.model||'---')+'</span></div>')
+      +('<div class="info-item"><span class="info-label">Serial</span><span class="info-value">'+(sys.bios_serial||'---')+'</span></div>')
+      +('<div class="info-item"><span class="info-label">Sistema</span><span class="info-value">'+(sys.os_caption||'---')+'</span></div>')
+      +'</div>'
+      +'</div>'
+
+      /* SOCIAL LINKS (adapted for tech info) */
+      +'<div class="info-section">'
+      +'<div class="info-header"><span class="info-icon">🌐</span><span class="info-title">Conectividade</span></div>'
+      +'<div class="info-body">'
+      +('<div class="info-item"><span class="info-label">IP</span><span class="info-value">'+(net.interfaces&&net.interfaces[0]&&net.interfaces[0].ipv4&&net.interfaces[0].ipv4[0]||'---')+'</span></div>')
+      +('<div class="info-item"><span class="info-label">MAC</span><span class="info-value">'+(net.interfaces&&net.interfaces[0]&&net.interfaces[0].mac||'---')+'</span></div>')
+      +('<div class="info-item"><span class="info-label">Dominio</span><span class="info-value">'+(sys.domain||'---')+'</span></div>')
+      +('<div class="info-item"><span class="info-label">Usuario</span><span class="info-value">'+(sys.logged_user||'---')+'</span></div>')
+      +'</div>'
+      +'</div>';
+
+    /* ── RIGHT PANEL ─────────────────────────── */
+    var rightPanelHTML=
+      '<div class="tab-bar">'
+      +'<button class="tab-btn active" data-tab="overview">📊 Overview</button>'
+      +'<button class="tab-btn" data-tab="hardware">⚙️ Hardware</button>'
+      +'<button class="tab-btn" data-tab="dispositivos">🔌 Dispositivos</button>'
+      +'<button class="tab-btn" data-tab="software">📦 Software</button>'
+      +'</div>'
+
+      /* ── TAB: OVERVIEW ── */
+      +'<div class="tab-content active" data-tab="overview">'
+      +'<div class="health-grid">'
+      +'<div class="kpi-card '+gcClass(cpuVal)+'">'
+        +'<div class="kpi-label">CPU</div>'
+        +'<div class="kpi-val">'+(cpuVal!=null?Math.round(cpuVal)+'%':'---')+'</div>'
+        +'<div class="kpi-sub">uso atual</div>'
+      +'</div>'
+      +'<div class="kpi-card '+gcClass(ramVal)+'">'
+        +'<div class="kpi-label">Memoria</div>'
+        +'<div class="kpi-val">'+(ramVal!=null?Math.round(ramVal)+'%':'---')+'</div>'
+        +'<div class="kpi-sub">'+(hw.memory&&hw.memory.total_bytes?fmtBytes(hw.memory.total_bytes):'total')+'</div>'
+      +'</div>'
+      +'<div class="kpi-card '+gcClass(diskVal)+'">'
+        +'<div class="kpi-label">Disco</div>'
+        +'<div class="kpi-val">'+(diskVal!=null?Math.round(diskVal)+'%':'---')+'</div>'
+        +'<div class="kpi-sub">uso maximo</div>'
+      +'</div>'
+      +'<div class="kpi-card">'
+        +'<div class="kpi-label">Temp.</div>'
+        +'<div class="kpi-val">'+(health.temp_max_c?health.temp_max_c+'°C':'---')+'</div>'
+        +'<div class="kpi-sub">maxima</div>'
+      +'</div>'
+      +'</div>'
+      +'<div class="sec-card">'
+      +'<div class="sec-head"><div class="sec-icon">🛡️</div><span class="sec-title">Antivirus</span></div>'
+      +'<div class="sec-body">'+avHTML+'</div>'
+      +'</div>'
+      +'</div>'
+
+      /* ── TAB: HARDWARE ── */
+      +'<div class="tab-content" data-tab="hardware">'
+      +'<div class="sec-card">'
+      +'<div class="sec-head"><div class="sec-icon">⚙️</div><span class="sec-title">Hardware</span></div>'
+      +'<div class="sec-body"><dl class="kv">'
+      +kv('Processador',hw.cpu&&hw.cpu.name)
+      +kv('Nucleos',hw.cpu?hw.cpu.cores_physical+' fisicos · '+hw.cpu.cores_logical+' logicos':null)
+      +kv('Frequencia',hw.cpu&&hw.cpu.freq_mhz?hw.cpu.freq_mhz+' MHz':null)
+      +kv('Memoria RAM',hw.memory&&hw.memory.total_bytes?fmtBytes(hw.memory.total_bytes):null)
+      +kv('GPU',(hw.gpu||[]).map(function(g){return g.name;}).join(', ')||null)
+      +'</dl>'
+      +(disksHTML?'<div style="margin-top:.85rem"><div style="font-size:.72rem;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:.5rem">Armazenamento</div>'+disksHTML+'</div>':'')
+      +'</div>'
+      +'</div>'
+      +'</div>'
+
+      /* ── TAB: DISPOSITIVOS ── */
+      +'<div class="tab-content" data-tab="dispositivos">'
+      +'<div class="sec-card">'
+      +'<div class="sec-head"><div class="sec-icon">🔌</div><span class="sec-title">Dispositivos</span></div>'
+      +'<div class="sec-body">'
+      +'<div style="font-size:.72rem;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:.4rem">USB</div>'
+      +usbHTML
+      +'<div style="font-size:.72rem;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin:.9rem 0 .4rem">Monitores</div>'
+      +monHTML
+      +(dev.removable_drives&&dev.removable_drives.length?'<div style="font-size:.72rem;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin:.9rem 0 .4rem">Drives removiveis</div>'+remHTML:'')
+      +'<div style="font-size:.72rem;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin:.9rem 0 .4rem">Rede</div>'
+      +netHTML
+      +'</div>'
+      +'</div>'
+      +'</div>'
+
+      /* ── TAB: SOFTWARE ── */
+      +'<div class="tab-content" data-tab="software">'
+      +'<div class="sec-card col-full">'
+      +'<div class="sec-head"><div class="sec-icon">📦</div><span class="sec-title">Software Instalado</span><span class="sec-count">'+sw.length+'</span></div>'
+      +'<div class="sec-body">'+swHTML+'</div>'
+      +'</div>'
+      +'</div>';
+
+    /* ── RENDER ── */
+    qs('#content').innerHTML=
+      '<div class="left-panel">'+leftPanelHTML+'</div>'
+      +'<div class="right-panel">'+rightPanelHTML+'</div>';
+
+    /* ── TAB SWITCHING ── */
+    var tabBtns=qs('#content').querySelectorAll('.tab-btn');
+    var tabContents=qs('#content').querySelectorAll('.tab-content');
+    tabBtns.forEach(function(btn){
+      btn.addEventListener('click',function(){
+        var tab=this.getAttribute('data-tab');
+        tabBtns.forEach(function(b){b.classList.remove('active');});
+        tabContents.forEach(function(c){c.classList.remove('active');});
+        btn.classList.add('active');
+        qs('[data-tab="'+tab+'"]').classList.add('active');
+      });
+    });
+
+    /* ── Software filter logic ── */
+    var swData=sw;
+    var tbody=qs('#'+swId);
+    var countEl=qs('#'+swCountId);
+    function renderSW(list){
+      tbody.innerHTML=list.map(function(s){
+        return '<tr><td>'+(s.name||'---')+'</td><td>'+(s.version||'')+'</td></tr>';
+      }).join('');
+      countEl.textContent=list.length+' / '+swData.length+' programas';
+    }
+    renderSW(swData);
+    qs('#'+swSearchId).addEventListener('input',function(e){
+      var q=e.target.value.toLowerCase().trim();
+      renderSW(q?swData.filter(function(s){return (s.name||'').toLowerCase().indexOf(q)>-1;}):swData);
+    });
+  }
+
+  /* ── Load ─────────────────────────────────────────────────── */
+  function load(){
+    if(!assetId){
+      qs('#content').innerHTML='<div class="error-state"><h2>ID de ativo nao fornecido</h2><p>Abra esta pagina a partir do dashboard.</p></div>';
+      return;
+    }
+    fetch('/api/assets/'+assetId)
+      .then(function(r){if(!r.ok)throw new Error('not found');return r.json();})
+      .then(renderPage)
+      .catch(function(){
+        /* fallback demo */
+        var demo=DEMO[assetId];
+        if(demo){renderPage(demo);}
+        else{
+          /* generic demo for unknown IDs */
+          var now=Date.now();
+          var generic={
+            asset_id:assetId,hostname:'WS-ATIVO-'+assetId,status:'ok',
+            last_seen:new Date(now-60000).toISOString(),
+            tags:{setor:'TI'},
+            system:{manufacturer:'Generic',model:'PC',os_caption:'Windows 11 Pro',logged_user:'usuario',uptime_seconds:172800,domain:'martinelli.local',bios_serial:'SN-'+assetId},
+            hardware:{cpu:{name:'Intel Core i5',cores_physical:6,cores_logical:12,freq_mhz:3200},memory:{total_bytes:8589934592},gpu:[],disks:[]},
+            health:{cpu_percent:35,memory_percent:55,disk_worst_percent:45,pending_reboot:false,antivirus:[{name:'Microsoft Defender',enabled:true,up_to_date:true}]},
+            network:{interfaces:[{name:'Ethernet',ipv4:['192.168.1.'+assetId],mac:'00:AA:BB:CC:DD:'+assetId}]},
+            devices:{usb:[],monitors:[],removable_drives:[]},
+            software:[{name:'Microsoft 365',version:'16.0'},{name:'Google Chrome',version:'126.0'}]
+          };
+          renderPage(generic);
+        }
+      });
+  }
+
+  load();
+})();
+</script>
+</body>
+</html>

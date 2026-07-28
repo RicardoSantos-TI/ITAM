@@ -1,0 +1,16 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Logs
+*.log
+agent.log
+
+# Databases and State Files
+inventario.db
+agent_state.json
+
+# Local Mounts/Outputs
+mnt/
+
