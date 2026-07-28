@@ -344,21 +344,24 @@ if (-not $pythonw) {{
 Register-ScheduledTask -TaskName $taskName -Action (New-ScheduledTaskAction -Execute "cmd.exe" -Argument "/c echo") -Trigger (New-ScheduledTaskTrigger -At (Get-Date) -Once) -Force | Out-Null
 Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
 
-$action = New-ScheduledTaskAction -Execute "$pythonwPath" -Argument "\\`"$agentDir\\agent.py\\`""
-$trigger = New-ScheduledTaskTrigger -At (Get-Date) -Once -RepetitionInterval (New-TimeSpan -Minutes 60)
-$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
+$action = New-ScheduledTaskAction -Execute "$pythonwPath" -Argument "\\`"$agentDir\\agent.py --loop\\`""
+$trigger = New-ScheduledTaskTrigger -AtLogon
+$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -MultipleInstances IgnoreNew
 
 Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Settings $settings -User "NT AUTHORITY\\SYSTEM" -Force | Out-Null
 
 Write-Host "`n================================================" -ForegroundColor Cyan
 Write-Host "✅ AGENTE INSTALADO E CONFIGURADO COM SUCESSO!" -ForegroundColor Green
-Write-Host "O agente irá rodar automaticamente a cada 60 minutos." -ForegroundColor White
+Write-Host "O agente irá rodar continuamente em segundo plano (Tempo Real)." -ForegroundColor White
 Write-Host "================================================" -ForegroundColor Cyan
 
 # Executar a primeira coleta imediatamente para registrar o ativo
 Write-Host "Executando primeira coleta de dados agora..." -ForegroundColor Yellow
 & python "$agentDir\\agent.py"
-Write-Host "✅ Coleta concluída e dados enviados!" -ForegroundColor Green
+Write-Host "✅ Coleta de registro concluída!" -ForegroundColor Green
+
+# Iniciar o serviço em tempo real em segundo plano imediatamente
+Start-ScheduledTask -TaskName $taskName
 """
     return PlainTextResponse(content=script, media_type="text/plain")
 
