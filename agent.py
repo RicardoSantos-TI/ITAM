@@ -599,7 +599,7 @@ def build_payload(cfg: dict) -> dict:
     return {
         "asset_id": stable_asset_id(),
         "collected_at": _now_iso(),
-        "agent_version": "1.2.0",
+        "agent_version": "1.2.1",
         "tags": cfg.get("tags", {}),
         "system": _safe(collect_system, {}),
         "hardware": _safe(collect_hardware, {}),
@@ -764,17 +764,23 @@ def main():
     last_full_scan = time.time()
 
     while True:
-        time.sleep(fast_interval)
-        now = time.time()
-        if now - last_full_scan >= interval:
-            if not args.dry_run:
-                # Checa por atualizações antes de iniciar a varredura completa
-                check_for_updates(cfg)
-            log.info("Executando inventario completo agendado...")
-            run_once(cfg, dry_run=args.dry_run, partial=False)
-            last_full_scan = now
-        else:
-            run_once(cfg, dry_run=args.dry_run, partial=True)
+        try:
+            time.sleep(fast_interval)
+            now = time.time()
+            if now - last_full_scan >= interval:
+                if not args.dry_run:
+                    # Checa por atualizações antes de iniciar a varredura completa
+                    check_for_updates(cfg)
+                log.info("Executando inventario completo agendado...")
+                run_once(cfg, dry_run=args.dry_run, partial=False)
+                last_full_scan = now
+            else:
+                run_once(cfg, dry_run=args.dry_run, partial=True)
+        except KeyboardInterrupt:
+            log.info("Encerrando por interrupcao do usuario.")
+            break
+        except Exception as e:
+            log.error("Erro no laco do agente (tentando novamente no proximo ciclo): %s", e)
 
 
 if __name__ == "__main__":

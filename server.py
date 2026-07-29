@@ -45,7 +45,7 @@ GEO_API_KEY = os.environ.get("GEO_API_KEY", "")
 DASHBOARD = os.path.join(os.path.dirname(__file__), "dashboard.html")
 ATIVO = os.path.join(os.path.dirname(__file__), "ativo.html")
 
-app = FastAPI(title="Inventario de TI", version="1.2.0")
+app = FastAPI(title="Inventario de TI", version="1.2.1")
 
 
 # ---------------------------------------------------------------------------
