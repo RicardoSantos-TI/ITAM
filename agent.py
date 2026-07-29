@@ -80,6 +80,9 @@ DEFAULT_CONFIG = {
     "server_url": "http://localhost:8000/api/ingest",
     "api_key": "troque-esta-chave",
     "interval_seconds": 3600,
+    # Intervalo dos envios parciais de saude (modo "tempo real").
+    # Minimo aceito: 2s, para nao saturar CPU/rede da maquina.
+    "realtime_interval_seconds": 5,
     "tags": {"setor": "", "responsavel": ""},
     "verify_tls": True,
 }
@@ -422,17 +425,18 @@ def collect_connected_devices():
 def collect_health():
     h = {}
     if psutil:
-        h["cpu_percent"] = _safe(lambda: psutil.cpu_percent(interval=1.0))
+        # Janela de amostragem curta (0.5s) para o ciclo tempo-real ficar agil
+        h["cpu_percent"] = _safe(lambda: psutil.cpu_percent(interval=0.5))
         vm = _safe(psutil.virtual_memory)
         if vm:
             h["memory_percent"] = vm.percent
-        
+
         if hasattr(psutil, "sensors_battery"):
             batt = _safe(psutil.sensors_battery)
             if batt:
                 h["battery_percent"] = batt.percent
                 h["battery_plugged"] = batt.power_plugged
-                
+
         if hasattr(psutil, "sensors_temperatures"):
             temps = _safe(psutil.sensors_temperatures)
             if temps:
@@ -495,7 +499,7 @@ def build_payload(cfg: dict) -> dict:
     return {
         "asset_id": stable_asset_id(),
         "collected_at": _now_iso(),
-        "agent_version": "1.0.0",
+        "agent_version": "1.1.0",
         "tags": cfg.get("tags", {}),
         "system": _safe(collect_system, {}),
         "hardware": _safe(collect_hardware, {}),
@@ -649,8 +653,10 @@ def main():
         sys.exit(0 if ok else 1)
 
     interval = int(cfg.get("interval_seconds", 3600))
-    fast_interval = 15
-    log.info("Agente em laco. Intervalo do Inventario=%ss. Intervalo Tempo Real=%ss", interval, fast_interval)
+    # Intervalo tempo-real configuravel; piso de 2s para nao saturar a maquina
+    fast_interval = max(2, int(cfg.get("realtime_interval_seconds", 5)))
+    log.info("Agente em laco. Inventario completo=%ss. Tempo real=%ss",
+             interval, fast_interval)
 
     # Executa primeiro envio completo no arranque
     run_once(cfg, dry_run=args.dry_run, partial=False)

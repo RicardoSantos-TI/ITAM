@@ -29,7 +29,7 @@ DB_PATH = os.environ.get("DB_PATH", os.path.join(os.path.dirname(__file__),
                                                  "inventario.db"))
 DASHBOARD = os.path.join(os.path.dirname(__file__), "dashboard.html")
 
-app = FastAPI(title="Inventario de TI", version="1.0.0")
+app = FastAPI(title="Inventario de TI", version="1.1.0")
 
 
 # ---------------------------------------------------------------------------
@@ -114,7 +114,7 @@ async def ingest(request: Request, x_api_key: str = Header(default="")):
                     if "system" not in existing_data:
                         existing_data["system"] = {}
                     existing_data["system"]["logged_user"] = payload["system"].get("logged_user") or existing_data["system"].get("logged_user")
-                
+
                 payload_to_save = existing_data
                 hostname = row["hostname"] or hostname
             else:
@@ -275,6 +275,7 @@ def download_config(request: Request):
         "server_url": server_url,
         "api_key": API_KEY,
         "interval_seconds": 3600,
+        "realtime_interval_seconds": 5,
         "tags": {
             "setor": "Default",
             "responsavel": ""
@@ -332,8 +333,8 @@ if ($LASTEXITCODE -ne 0) {{
     & pip install psutil requests WMI pywin32
 }}
 
-# 5. Criar tarefa agendada para rodar de hora em hora
-Write-Host "Configurando Tarefa Agendada no Windows..." -ForegroundColor Yellow
+# 5. Criar tarefa agendada: inicia junto com o SISTEMA (boot) e continua em loop
+Write-Host "Configurando Tarefa Agendada no Windows (inicialização do sistema)..." -ForegroundColor Yellow
 
 $taskName = "ITAM-Agent"
 $pythonw = Get-Command pythonw -ErrorAction SilentlyContinue
@@ -344,18 +345,28 @@ if (-not $pythonw) {{
 }}
 
 # Remove tarefa existente se houver
-Register-ScheduledTask -TaskName $taskName -Action (New-ScheduledTaskAction -Execute "cmd.exe" -Argument "/c echo") -Trigger (New-ScheduledTaskTrigger -At (Get-Date) -Once) -Force | Out-Null
 Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
 
-$action = New-ScheduledTaskAction -Execute "$pythonwPath" -Argument "\\`"$agentDir\\agent.py --loop\\`""
-$trigger = New-ScheduledTaskTrigger -AtLogon
-$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -MultipleInstances IgnoreNew
+$action = New-ScheduledTaskAction -Execute "$pythonwPath" -Argument "\\`"$agentDir\\agent.py\\`" --loop"
 
-Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Settings $settings -User "NT AUTHORITY\\SYSTEM" -Force | Out-Null
+# Dispara no BOOT do sistema (antes mesmo de qualquer logon) e também no logon,
+# como redundância caso a tarefa seja parada manualmente.
+$triggerBoot  = New-ScheduledTaskTrigger -AtStartup
+$triggerLogon = New-ScheduledTaskTrigger -AtLogOn
+
+# Sem limite de tempo de execução (loop infinito) + reinício automático se cair
+$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
+    -StartWhenAvailable -MultipleInstances IgnoreNew `
+    -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) `
+    -ExecutionTimeLimit ([TimeSpan]::Zero)
+
+Register-ScheduledTask -TaskName $taskName -Action $action `
+    -Trigger @($triggerBoot, $triggerLogon) -Settings $settings `
+    -User "NT AUTHORITY\\SYSTEM" -RunLevel Highest -Force | Out-Null
 
 Write-Host "`n================================================" -ForegroundColor Cyan
 Write-Host "✅ AGENTE INSTALADO E CONFIGURADO COM SUCESSO!" -ForegroundColor Green
-Write-Host "O agente irá rodar continuamente em segundo plano (Tempo Real)." -ForegroundColor White
+Write-Host "Inicia automaticamente com o Windows e envia dados em tempo real (5s)." -ForegroundColor White
 Write-Host "================================================" -ForegroundColor Cyan
 
 # Executar a primeira coleta imediatamente para registrar o ativo
@@ -385,39 +396,90 @@ if ! command -v python3 &>/dev/null; then
     echo "❌ Python3 não encontrado! Por favor, instale o Python3 e tente novamente."
     exit 1
 fi
-echo "✅ Python3 encontrado: \\$(python3 --version)"
+echo "✅ Python3 encontrado: $(python3 --version)"
 
 # 2. Criar diretório do agente
 AGENT_DIR="/opt/itam-agent"
-sudo mkdir -p "\\$AGENT_DIR"
-sudo chmod 755 "\\$AGENT_DIR"
+sudo mkdir -p "$AGENT_DIR"
+sudo chmod 755 "$AGENT_DIR"
 
 # 3. Baixar arquivos
 echo "Baixando arquivos do agente..."
-sudo curl -sS -o "\\$AGENT_DIR/agent.py" "{base_url}/api/agent/download/agent.py"
-sudo curl -sS -o "\\$AGENT_DIR/config.json" "{base_url}/api/agent/download/config.json"
-sudo chmod 644 "\\$AGENT_DIR/agent.py" "\\$AGENT_DIR/config.json"
+sudo curl -sS -o "$AGENT_DIR/agent.py" "{base_url}/api/agent/download/agent.py"
+sudo curl -sS -o "$AGENT_DIR/config.json" "{base_url}/api/agent/download/config.json"
+sudo chmod 644 "$AGENT_DIR/agent.py" "$AGENT_DIR/config.json"
 
 # 4. Instalar dependências
 echo "Instalando dependências do Python..."
 sudo python3 -m pip install --upgrade pip -q || true
 sudo pip3 install psutil requests || sudo python3 -m pip install psutil requests || true
 
-# 5. Adicionar no cron para rodar a cada hora
-echo "Configurando Cron Job..."
-CRON_JOB="0 * * * * python3 \\$AGENT_DIR/agent.py >/dev/null 2>&1"
-(sudo crontab -l 2>/dev/null | grep -Fv "\\$AGENT_DIR/agent.py"; echo "\\$CRON_JOB") | sudo crontab -
+# 5. Registrar para iniciar junto com o sistema, em loop tempo-real
+PYTHON_BIN="$(command -v python3)"
+
+if command -v systemctl &>/dev/null; then
+    echo "Configurando serviço systemd (inicia no boot, loop tempo-real)..."
+    sudo tee /etc/systemd/system/itam-agent.service > /dev/null <<UNIT
+[Unit]
+Description=Agente de Inventario de TI (ITAM)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=$PYTHON_BIN $AGENT_DIR/agent.py --loop
+WorkingDirectory=$AGENT_DIR
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now itam-agent.service
+    echo "✅ Serviço itam-agent ativo (systemctl status itam-agent)."
+
+elif [ "$(uname)" = "Darwin" ]; then
+    echo "Configurando LaunchDaemon do macOS (inicia no boot, loop tempo-real)..."
+    sudo tee /Library/LaunchDaemons/io.inventar.agent.plist > /dev/null <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>io.inventar.agent</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>$PYTHON_BIN</string>
+    <string>$AGENT_DIR/agent.py</string>
+    <string>--loop</string>
+  </array>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>WorkingDirectory</key><string>$AGENT_DIR</string>
+</dict>
+</plist>
+PLIST
+    sudo launchctl load -w /Library/LaunchDaemons/io.inventar.agent.plist
+    echo "✅ LaunchDaemon io.inventar.agent carregado."
+
+else
+    echo "systemd não encontrado; usando cron @reboot como alternativa..."
+    CRON_JOB="@reboot $PYTHON_BIN $AGENT_DIR/agent.py --loop >/dev/null 2>&1"
+    (sudo crontab -l 2>/dev/null | grep -Fv "$AGENT_DIR/agent.py"; echo "$CRON_JOB") | sudo crontab -
+    sudo nohup "$PYTHON_BIN" "$AGENT_DIR/agent.py" --loop >/dev/null 2>&1 &
+    echo "✅ Cron @reboot registrado e agente iniciado em segundo plano."
+fi
 
 echo
 echo "================================================"
 echo "✅ AGENTE INSTALADO E CONFIGURADO COM SUCESSO!"
-echo "O agente irá rodar automaticamente a cada hora."
+echo "Inicia automaticamente com o sistema e envia dados em tempo real (5s)."
 echo "================================================"
 echo
 
-# Executar a primeira coleta
+# Executar a primeira coleta completa para registrar o ativo imediatamente
 echo "Executando primeira coleta de dados agora..."
-sudo python3 "\\$AGENT_DIR/agent.py"
+sudo python3 "$AGENT_DIR/agent.py"
 echo "✅ Coleta concluída e dados enviados!"
 """
     return PlainTextResponse(content=script, media_type="text/plain")
@@ -432,4 +494,3 @@ if __name__ == "__main__":
     import uvicorn
     # Permite iniciar o servidor diretamente com `python server.py`
     uvicorn.run("server:app", host="0.0.0.0", port=8080, reload=True)
-
