@@ -77,7 +77,7 @@ log = logging.getLogger("agente")
 # Configuracao e identidade da maquina
 # ---------------------------------------------------------------------------
 DEFAULT_CONFIG = {
-    "server_url": "http://localhost:8000/api/ingest",
+    "server_url": "https://auto-bots.up.railway.app/api/ingest",
     "api_key": "troque-esta-chave",
     "interval_seconds": 3600,
     # Intervalo dos envios parciais de saude (modo "tempo real").

@@ -1,5 +1,5 @@
 {
-  "server_url": "http://localhost:8000/api/ingest",
+  "server_url": "https://auto-bots.up.railway.app/api/ingest",
   "api_key": "troque-esta-chave-por-uma-forte",
   "interval_seconds": 3600,
   "realtime_interval_seconds": 5,
