@@ -508,12 +508,13 @@ body{padding-top:64px}
     if(uptime) chips+='<span class="meta-chip"><b>Uptime</b><span class="v">'+esc(uptime)+'</span></span>';
     chips+='<span class="meta-chip"><b>Visto</b><span class="v">'+esc(ago(a.last_seen))+'</span></span>';
     chips+='<span class="meta-chip"><b>ID</b><span class="v">'+esc(a.asset_id)+'</span></span>';
+    if(a.agent_version) chips+='<span class="meta-chip"><b>Agente</b><span class="v">v'+esc(a.agent_version)+'</span></span>';
     if(health.pending_reboot) chips+='<span class="meta-chip chip-warn"><b>!</b><span class="v">Reinicialização pendente</span></span>';
 
     var headHTML=
       '<section class="asset-head st-'+st+'" style="grid-column:1/-1">'
       +'<div class="asset-head-top">'
-      +'<h1 class="asset-hostname">'+esc(a.hostname||'—')+'</h1>'
+      +'<h1 class="asset-hostname">'+esc(a.hostname||'—')+'<span style="font-size: 1rem; font-weight: 500; color: var(--text-3); margin-left: .75rem; vertical-align: middle;">v'+esc(a.agent_version || '1.0.0')+'</span></h1>'
       +'<span class="status-pill st-'+st+'"><span class="led"></span>'+STATUS_LABEL[st]+'</span>'
       +'</div>'
       +'<div class="asset-head-meta">'+chips+'</div>'

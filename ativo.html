@@ -372,7 +372,7 @@
         var st=ST[a.status]||ST.ok;
         return '<article class="asset-item status-'+a.status+'" data-id="'+a.asset_id+'">'
           +'<div class="asset-top">'
-          +'<div class="asset-name"><span class="status-led '+st.led+'"></span>'+(a.hostname||'—')+'</div>'
+          +'<div class="asset-name"><span class="status-led '+st.led+'"></span>'+(a.hostname||'—')+'<span style="font-size: .72rem; font-weight: 500; color: var(--text-3); margin-left: .35rem;" title="Versão do Agente">v'+(a.agent_version||'—')+'</span></div>'
           +(a.tags&&a.tags.setor?'<span class="asset-tag '+st.tag+'">'+a.tags.setor+'</span>':'')
           +'</div>'
           +'<div class="asset-sub">'+(a.os||'Sistema desconhecido')+'</div>'
@@ -397,7 +397,7 @@
       qs('#table-body').innerHTML=list.map(function(a){
         var st=ST[a.status]||ST.ok;
         return '<tr class="table-row" data-id="'+a.asset_id+'">'
-          +'<td><div class="status-cell"><span class="status-led '+st.led+'"></span>'+(a.hostname||'—')+'</div></td>'
+          +'<td><div class="status-cell"><span class="status-led '+st.led+'"></span>'+(a.hostname||'—')+'<span style="font-size: .72rem; font-weight: 500; color: var(--text-3); margin-left: .25rem;" title="Versão do Agente">v'+(a.agent_version||'—')+'</span></div></td>'
           +'<td>'+(a.tags&&a.tags.setor?'<span class="asset-tag '+st.tag+'">'+a.tags.setor+'</span>':'<span style="color:var(--text-dis)">—</span>')+'</td>'
           +'<td style="color:var(--text-2)">'+(a.os||'Sistema desconhecido')+'</td>'
           +'<td>'+gTableBar(a.cpu)+'</td>'

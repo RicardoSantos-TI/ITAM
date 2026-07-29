@@ -283,6 +283,7 @@ def list_assets():
                 "disk": health.get("disk_worst_percent"),
                 "software_count": len(payload.get("software") or []),
                 "tags": payload.get("tags") or {},
+                "agent_version": payload.get("agent_version") or "1.0.0",
             })
     return out
 
