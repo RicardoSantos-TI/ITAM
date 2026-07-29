@@ -351,100 +351,7 @@ body{padding-top:64px}
   var params=new URLSearchParams(window.location.search);
   var assetId=params.get('id');
 
-  /* ── Dados demo ──────────────────────────────────────────── */
-  var DEMO={
-    '1':{asset_id:'1',hostname:'WS-JURIDICO-01',status:'ok',online:true,source_ip:'200.160.2.3',wps_enabled:true,wifi_ap_count:6,
-      _geo:{lat:-23.55841,lng:-46.66012,accuracy:34,provider:'google',located_at:new Date(Date.now()-300000).toISOString()},
-      last_seen:new Date(Date.now()-120000).toISOString(),
-      tags:{setor:'Jurídico'},
-      system:{manufacturer:'Dell',model:'OptiPlex 7090',bios_serial:'DL7090-0001',domain:'inventar.local',logged_user:'ana.souza',os_caption:'Windows 11 Pro 23H2',uptime_seconds:342000},
-      hardware:{
-        cpu:{name:'Intel Core i7-10700',cores_physical:8,cores_logical:16,freq_mhz:2900},
-        memory:{total_bytes:17179869184},
-        gpu:[{name:'Intel UHD Graphics 630'}],
-        disks:[{model:'Samsung SSD 870 EVO 512GB',size_bytes:512110190592,interface:'SATA'},{model:'WD Blue 1TB',size_bytes:1000204886016,interface:'SATA'}]
-      },
-      health:{cpu_percent:42,memory_percent:61,disk_worst_percent:55,pending_reboot:false,battery_percent:null,temp_max_c:48,
-        antivirus:[{name:'Microsoft Defender',enabled:true,up_to_date:true}]
-      },
-      network:{interfaces:[
-        {name:'Ethernet',ipv4:['192.168.1.101'],mac:'00:1A:2B:3C:4D:5E'},
-        {name:'Wi-Fi',ipv4:['192.168.1.115'],mac:'AA:BB:CC:DD:EE:FF'}
-      ]},
-      devices:{
-        usb:[{name:'Logitech USB Keyboard'},{name:'Logitech USB Mouse'},{name:'USB Hub 3.0'}],
-        monitors:[{product:'Dell P2422H',serial:'SN12345'},{product:'Dell P2422H',serial:'SN67890'}],
-        removable_drives:[]
-      },
-      software:[
-        {name:'Microsoft 365',version:'16.0.17126'},
-        {name:'Google Chrome',version:'126.0.6478.114'},
-        {name:'Adobe Reader DC',version:'24.002.20857'},
-        {name:'7-Zip',version:'23.01'},
-        {name:'VLC Media Player',version:'3.0.20'},
-        {name:'Zoom',version:'5.17.11'},
-        {name:'Teams',version:'1.7.0.27559'},
-        {name:'Notepad++',version:'8.6.5'},
-        {name:'WinRAR',version:'7.01'},
-        {name:'Slack',version:'4.38.125'},
-        {name:'Python 3.11',version:'3.11.9'},
-        {name:'Node.js',version:'20.14.0'}
-      ]
-    },
-    '2':{asset_id:'2',hostname:'WS-ADM-02',status:'atencao',online:true,source_ip:'192.168.1.102',last_seen:new Date(Date.now()-900000).toISOString(),
-      tags:{setor:'Administrativo'},
-      system:{manufacturer:'HP',model:'EliteDesk 800 G6',bios_serial:'HP800G6-0002',domain:'inventar.local',logged_user:'carlos.lima',os_caption:'Windows 10 Pro 22H2',uptime_seconds:86400},
-      hardware:{cpu:{name:'Intel Core i5-10500',cores_physical:6,cores_logical:12,freq_mhz:3100},memory:{total_bytes:8589934592},gpu:[{name:'Intel UHD Graphics 630'}],disks:[{model:'Kingston A400 240GB',size_bytes:240057409536,interface:'SATA'}]},
-      health:{cpu_percent:78,memory_percent:82,disk_worst_percent:67,pending_reboot:true,battery_percent:null,temp_max_c:71,antivirus:[{name:'Microsoft Defender',enabled:true,up_to_date:false}]},
-      network:{interfaces:[{name:'Ethernet',ipv4:['192.168.1.102'],mac:'00:2B:3C:4D:5E:6F'}]},
-      devices:{usb:[{name:'USB Keyboard'},{name:'USB Mouse'}],monitors:[{product:'HP EliteDisplay E243',serial:'SN11111'}],removable_drives:[]},
-      software:[{name:'Microsoft 365',version:'16.0.17100'},{name:'Google Chrome',version:'124.0'},{name:'Adobe Reader',version:'23.0'}]
-    },
-    '5':{asset_id:'5',hostname:'WS-CONTAB-03',status:'critico',online:true,source_ip:'192.168.1.105',last_seen:new Date(Date.now()-200000).toISOString(),
-      tags:{setor:'Contabilidade'},
-      system:{manufacturer:'Lenovo',model:'ThinkCentre M70q',bios_serial:'LN70Q-0005',domain:'inventar.local',logged_user:'beatriz.melo',os_caption:'Windows 10 Pro 21H2',uptime_seconds:604800},
-      hardware:{cpu:{name:'Intel Core i3-10100',cores_physical:4,cores_logical:8,freq_mhz:3600},memory:{total_bytes:4294967296},gpu:[{name:'Intel UHD Graphics 630'}],disks:[{model:'Seagate 500GB HDD',size_bytes:500107862016,interface:'SATA'}]},
-      health:{cpu_percent:98,memory_percent:95,disk_worst_percent:91,pending_reboot:true,battery_percent:null,temp_max_c:89,antivirus:[{name:'Microsoft Defender',enabled:false,up_to_date:false}]},
-      network:{interfaces:[{name:'Ethernet',ipv4:['192.168.1.105'],mac:'00:5E:6F:7A:8B:9C'}]},
-      devices:{usb:[{name:'USB Pendrive 16GB'}],monitors:[{product:'Generic Monitor',serial:''}],removable_drives:[{device:'E:',total_bytes:16000000000}]},
-      software:[{name:'Microsoft Excel',version:'16.0'},{name:'Fiscal Software',version:'2.3.1'}]
-    }
-  };
 
-  /* Complementa dados demo com o que o agente real coleta:
-     storage (partições), printers, patches e histórico de saúde. */
-  function demoExtras(a){
-    var h=a.health||{};
-    if(!a.storage){
-      a.storage=[
-        {device:'C:',mountpoint:'C:\\',fstype:'NTFS',total_bytes:511000000000,used_bytes:Math.round(511000000000*(h.disk_worst_percent||50)/100),percent:h.disk_worst_percent||50,removable:false}
-      ];
-      if(a.hardware&&a.hardware.disks&&a.hardware.disks.length>1){
-        a.storage.push({device:'D:',mountpoint:'D:\\',fstype:'NTFS',total_bytes:1000000000000,used_bytes:310000000000,percent:31,removable:false});
-      }
-    }
-    if(!a.devices)a.devices={};
-    if(!a.devices.printers){
-      a.devices.printers=[{name:'HP LaserJet Pro M404',port:'IP_192.168.1.230',default:true,network:true}];
-    }
-    if(!a.patches){
-      a.patches=[
-        {id:'KB5039212',description:'Security Update',installed_on:'6/12/2026'},
-        {id:'KB5037771',description:'Update',installed_on:'5/15/2026'},
-        {id:'KB5036893',description:'Security Update',installed_on:'4/10/2026'}
-      ];
-    }
-    if(!a.history){
-      var hist=[],n=30,now=Date.now();
-      var c=h.cpu_percent||35,m=h.memory_percent||50,d=h.disk_worst_percent||45;
-      for(var i=n-1;i>=0;i--){
-        var jit=function(base){return Math.max(2,Math.min(99,base+(Math.sin(i*1.7)*8)+(Math.random()*10-5)));};
-        hist.push({ts:new Date(now-i*15000).toISOString(),cpu:jit(c),memory:jit(m),disk:Math.max(2,Math.min(99,d+(Math.random()*2-1)))});
-      }
-      a.history=hist;
-    }
-    return a;
-  }
 
   /* ── Gráfico de histórico (SVG inline, sem libs) ─────────── */
   function historyChart(hist){
@@ -909,24 +816,7 @@ body{padding-top:64px}
       .then(function(r){if(!r.ok)throw new Error('not found');return r.json();})
       .then(renderPage)
       .catch(function(){
-        /* fallback demo */
-        var demo=DEMO[assetId];
-        if(demo){renderPage(demoExtras(demo));}
-        else{
-          var now=Date.now();
-          var generic={
-            asset_id:assetId,hostname:'WS-ATIVO-'+assetId,status:'ok',
-            last_seen:new Date(now-60000).toISOString(),
-            tags:{setor:'TI'},
-            system:{manufacturer:'Generic',model:'PC',os_caption:'Windows 11 Pro',logged_user:'usuario',uptime_seconds:172800,domain:'inventar.local',bios_serial:'SN-'+assetId},
-            hardware:{cpu:{name:'Intel Core i5',cores_physical:6,cores_logical:12,freq_mhz:3200},memory:{total_bytes:8589934592},gpu:[],disks:[]},
-            health:{cpu_percent:35,memory_percent:55,disk_worst_percent:45,pending_reboot:false,antivirus:[{name:'Microsoft Defender',enabled:true,up_to_date:true}]},
-            network:{interfaces:[{name:'Ethernet',ipv4:['192.168.1.'+assetId],mac:'00:AA:BB:CC:DD:'+assetId}]},
-            devices:{usb:[],monitors:[],removable_drives:[]},
-            software:[{name:'Microsoft 365',version:'16.0'},{name:'Google Chrome',version:'126.0'}]
-          };
-          renderPage(demoExtras(generic));
-        }
+        qs('#content').innerHTML='<div class="error-state"><h2>Erro ao carregar dados do ativo</h2><p>Não foi possível obter os dados do ativo do servidor ou o ativo não existe.</p><p><a href="/">Voltar ao Console</a></p></div>';
       });
   }
 

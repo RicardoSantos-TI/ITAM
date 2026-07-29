@@ -430,28 +430,6 @@
     render();
   }
 
-  function loadDemo(){
-    var now=Date.now();
-    var d=[
-      {asset_id:'1',hostname:'WS-JURIDICO-01', os:'Windows 11 Pro',   status:'ok',      cpu:42,  memory:61,  disk:55,  user:'ana.souza',    last_seen:new Date(now-120000).toISOString(),  tags:{setor:'Jurídico'}},
-      {asset_id:'2',hostname:'WS-ADM-02',       os:'Windows 10 Pro',   status:'atencao', cpu:78,  memory:82,  disk:67,  user:'carlos.lima',  last_seen:new Date(now-900000).toISOString(),  tags:{setor:'Administrativo'}},
-      {asset_id:'3',hostname:'SRV-FILES-01',    os:'Ubuntu 22.04 LTS', status:'ok',      cpu:22,  memory:45,  disk:71,  user:'',             last_seen:new Date(now-30000).toISOString(),   tags:{setor:'TI'}},
-      {asset_id:'4',hostname:'WS-TI-RICBSAN',   os:'Windows 11 Pro',   status:'ok',      cpu:35,  memory:52,  disk:33,  user:'ricardo',      last_seen:new Date(now-5000).toISOString(),    tags:{setor:'TI'}},
-      {asset_id:'5',hostname:'WS-CONTAB-03',    os:'Windows 10 Pro',   status:'critico', cpu:98,  memory:95,  disk:91,  user:'beatriz.melo', last_seen:new Date(now-200000).toISOString(),  tags:{setor:'Contabilidade'}},
-      {asset_id:'6',hostname:'WS-RH-04',        os:'Windows 11 Pro',   status:'offline', cpu:null,memory:null,disk:null,user:'',             last_seen:new Date(now-7200000).toISOString(), tags:{setor:'RH'}},
-      {asset_id:'7',hostname:'WS-COMERCIAL-01', os:'Windows 10 Pro',   status:'ok',      cpu:28,  memory:44,  disk:58,  user:'marcos.dias',  last_seen:new Date(now-60000).toISOString(),   tags:{setor:'Comercial'}},
-      {asset_id:'8',hostname:'NB-DIRETORIA-01', os:'macOS Sequoia',    status:'ok',      cpu:18,  memory:39,  disk:27,  user:'diretoria',    last_seen:new Date(now-15000).toISOString(),   tags:{setor:'Diretoria'}}
-    ];
-    var sm={
-      total:d.length,
-      ok:d.filter(function(a){return a.status==='ok';}).length,
-      atencao:d.filter(function(a){return a.status==='atencao';}).length,
-      critico:d.filter(function(a){return a.status==='critico';}).length,
-      offline:d.filter(function(a){return a.status==='offline';}).length
-    };
-    assets=d; renderKPIs(sm); render();
-  }
-
   function load(){
     Promise.all([
       fetch('/api/assets').then(function(r){return r.json();}),
@@ -462,8 +440,10 @@
       render();
       qs('#meta').textContent=assets.length+' ativo(s) · '+new Date().toLocaleTimeString('pt-BR');
     }).catch(function(){
-      qs('#meta').textContent='sem conexão · modo demonstração';
-      loadDemo();
+      qs('#meta').textContent='erro de conexão com o servidor';
+      assets=[];
+      renderKPIs({total:0,ok:0,atencao:0,critico:0,offline:0});
+      render();
     });
   }
 
