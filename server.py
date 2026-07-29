@@ -83,6 +83,17 @@ def init_db():
             );
             CREATE INDEX IF NOT EXISTS idx_history_asset
                 ON history (asset_id, ts);
+            CREATE TABLE IF NOT EXISTS commands (
+                command_id TEXT PRIMARY KEY,
+                asset_id   TEXT NOT NULL,
+                action     TEXT NOT NULL,
+                status     TEXT NOT NULL,
+                output     TEXT,
+                created_at TEXT NOT NULL,
+                executed_at TEXT
+            );
+            CREATE INDEX IF NOT EXISTS idx_commands_asset
+                ON commands (asset_id, status);
             """
         )
 
@@ -175,6 +186,18 @@ async def ingest(request: Request, x_api_key: str = Header(default="")):
     is_partial = payload.get("partial", False)
     ingest_meta = {"source_ip": client_ip_of(request), "received_at": now_iso()}
 
+    # 1. Processar resultado de comando enviado pelo agente (se houver)
+    cmd_result = payload.get("command_result")
+    if cmd_result:
+        cmd_id = cmd_result.get("id")
+        cmd_status = cmd_result.get("status")  # "success" ou "failed"
+        cmd_output = cmd_result.get("output")
+        with db() as conn:
+            conn.execute(
+                "UPDATE commands SET status=?, output=?, executed_at=? WHERE command_id=?",
+                (cmd_status, cmd_output, now_iso(), cmd_id)
+            )
+
     with db() as conn:
         if is_partial:
             # Tenta buscar o inventário existente para mesclar
@@ -219,7 +242,59 @@ async def ingest(request: Request, x_api_key: str = Header(default="")):
              health.get("disk_worst_percent"),
              json.dumps(health)),
         )
-    return JSONResponse({"ok": True, "asset_id": asset_id})
+
+    # 2. Buscar comandos pendentes para este agente
+    pending_cmd = None
+    with db() as conn:
+        row = conn.execute(
+            "SELECT command_id, action FROM commands WHERE asset_id=? AND status='pending' ORDER BY created_at ASC LIMIT 1",
+            (asset_id,)
+        ).fetchone()
+        if row:
+            pending_cmd = {"command_id": row["command_id"], "action": row["action"]}
+            # Marca como "running" para nao reenviar enquanto executa
+            conn.execute(
+                "UPDATE commands SET status='running' WHERE command_id=?",
+                (row["command_id"],)
+            )
+
+    return JSONResponse({"ok": True, "asset_id": asset_id, "command": pending_cmd})
+
+
+@app.post("/api/assets/{asset_id}/command")
+async def queue_command(asset_id: str, request: Request):
+    body = await request.json()
+    action = body.get("action")
+    if not action:
+        raise HTTPException(status_code=400, detail="action ausente")
+
+    import uuid
+    cmd_id = str(uuid.uuid4())
+
+    with db() as conn:
+        conn.execute(
+            "INSERT INTO commands (command_id, asset_id, action, status, created_at) VALUES (?, ?, ?, 'pending', ?)",
+            (cmd_id, asset_id, action, now_iso())
+        )
+    return {"ok": True, "command_id": cmd_id, "status": "pending"}
+
+
+@app.get("/api/assets/{asset_id}/command/{command_id}")
+def get_command_status(asset_id: str, command_id: str):
+    with db() as conn:
+        row = conn.execute(
+            "SELECT status, output, created_at, executed_at FROM commands WHERE command_id=? AND asset_id=?",
+            (command_id, asset_id)
+        ).fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="comando nao encontrado")
+        return {
+            "command_id": command_id,
+            "status": row["status"],
+            "output": row["output"],
+            "created_at": row["created_at"],
+            "executed_at": row["executed_at"]
+        }
 
 
 # ---------------------------------------------------------------------------
@@ -254,6 +329,35 @@ def _status_of(payload: dict, last_seen: str) -> str:
     return "ok"
 
 
+def get_user_department(logged_user: str) -> str | None:
+    if not logged_user:
+        return None
+    user_clean = logged_user.lower().strip()
+    if "\\" in user_clean:
+        user_clean = user_clean.split("\\")[-1]
+
+    csv_path = os.path.join(os.path.dirname(__file__), "usersSP_2026-7-29.csv")
+    if not os.path.exists(csv_path):
+        csv_path = os.path.join(os.path.dirname(__file__), "fido-usuarios-s_o_paulo-s_o_paulo-all-2026-07-29.csv")
+        if not os.path.exists(csv_path):
+            return None
+
+    try:
+        import csv
+        with open(csv_path, "r", encoding="utf-8-sig", errors="ignore") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                upn = row.get("userPrincipalName") or row.get("UPN")
+                dept = row.get("department")
+                if upn and dept:
+                    upn_clean = upn.lower().strip()
+                    if upn_clean.startswith(f"{user_clean}@"):
+                        return dept.strip()
+    except Exception as e:
+        print(f"Erro ao ler CSV de departamentos: {e}")
+    return None
+
+
 @app.get("/api/assets")
 def list_assets():
     out = []
@@ -265,6 +369,14 @@ def list_assets():
             sysinfo = payload.get("system") or {}
             health = payload.get("health") or {}
             secs = _seconds_since(row["last_seen"])
+
+            tags = payload.get("tags") or {}
+            logged_user = sysinfo.get("logged_user")
+            dept = get_user_department(logged_user)
+            if dept:
+                tags = dict(tags)
+                tags["setor"] = dept
+
             out.append({
                 "asset_id": row["asset_id"],
                 "hostname": row["hostname"],
@@ -282,7 +394,7 @@ def list_assets():
                 "memory": health.get("memory_percent"),
                 "disk": health.get("disk_worst_percent"),
                 "software_count": len(payload.get("software") or []),
-                "tags": payload.get("tags") or {},
+                "tags": tags,
                 "agent_version": payload.get("agent_version") or "1.0.0",
             })
     return out
@@ -306,6 +418,16 @@ def asset_detail(asset_id: str):
         payload["source_ip"] = (payload.get("_ingest") or {}).get("source_ip")
         payload["wifi_ap_count"] = len(payload.get("wifi_scan") or [])
         payload["wps_enabled"] = bool(GEO_PROVIDER)
+
+        # Resolve setor pelo departamento do usuario
+        sysinfo = payload.get("system") or {}
+        logged_user = sysinfo.get("logged_user")
+        dept = get_user_department(logged_user)
+        if dept:
+            if "tags" not in payload:
+                payload["tags"] = {}
+            payload["tags"]["setor"] = dept
+
         # Nao devolve a lista bruta de BSSIDs ao frontend (dado sensivel);
         # so a contagem e a ultima posicao ja calculada, se houver.
         payload.pop("wifi_scan", None)

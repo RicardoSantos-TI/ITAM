@@ -699,10 +699,83 @@ def check_for_updates(cfg: dict) -> bool:
     return False
 
 
-def send_payload(cfg: dict, payload: dict) -> bool:
+pending_command_result = None
+
+
+def run_support_command(action: str) -> str:
+    log.info("Executando comando de suporte remoto: %s", action)
+    if action == "clean_temp":
+        freed = 0
+        errors = 0
+        paths_to_clean = []
+        if IS_WINDOWS:
+            paths_to_clean.append(r"C:\Windows\Temp")
+        import tempfile
+        try:
+            paths_to_clean.append(tempfile.gettempdir())
+        except Exception:
+            pass
+
+        cleaned_files = 0
+        for p in paths_to_clean:
+            if not os.path.exists(p):
+                continue
+            try:
+                for item in os.listdir(p):
+                    item_path = os.path.join(p, item)
+                    try:
+                        if os.path.isfile(item_path) or os.path.islink(item_path):
+                            sz = os.path.getsize(item_path)
+                            os.unlink(item_path)
+                            freed += sz
+                            cleaned_files += 1
+                        elif os.path.isdir(item_path):
+                            import shutil
+                            shutil.rmtree(item_path)
+                            cleaned_files += 1
+                    except Exception:
+                        errors += 1
+            except Exception:
+                errors += 1
+
+        mb = round(freed / (1024 * 1024), 2)
+        return f"OK: Limpeza concluida. {cleaned_files} itens apagados, liberados {mb} MB. Erros de permissao: {errors} arquivos em uso."
+
+    elif action == "restart_spooler":
+        if not IS_WINDOWS:
+            return "Falha: O Spooler de impressao so pode ser reiniciado no Windows."
+        try:
+            cmd = ["powershell", "-Command", "Restart-Service spooler -Force"]
+            out = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True, timeout=20)
+            return f"OK: Spooler de impressao reiniciado com sucesso.\n{out}"
+        except Exception as e:
+            try:
+                subprocess.run(["net", "stop", "spooler"], capture_output=True, timeout=10)
+                r = subprocess.run(["net", "start", "spooler"], capture_output=True, timeout=10)
+                if r.returncode == 0:
+                    return "OK: Spooler de impressao reiniciado com sucesso via NET CMD."
+                return f"Falha ao iniciar spooler: {r.stderr.decode('cp850', errors='ignore')}"
+            except Exception as ex:
+                return f"Falha ao reiniciar spooler: {e}\nFallback: {ex}"
+
+    elif action == "force_scan":
+        return "OK: Inventario completo forcado com sucesso."
+
+    elif action == "ping_check":
+        try:
+            cmd = ["ping", "-n", "4", "8.8.8.8"] if IS_WINDOWS else ["ping", "-c", "4", "8.8.8.8"]
+            out = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True, timeout=15)
+            return f"OK: Diagnostico de rede concluido.\n{out}"
+        except Exception as e:
+            return f"Falha ao executar ping: {e}"
+
+    return f"Falha: Acao desconhecida '{action}'"
+
+
+def send_payload(cfg: dict, payload: dict) -> dict | None:
     if not requests:
         log.error("Biblioteca 'requests' ausente. pip install requests")
-        return False
+        return None
     try:
         r = requests.post(
             cfg["server_url"],
@@ -715,22 +788,36 @@ def send_payload(cfg: dict, payload: dict) -> bool:
         if r.status_code < 300:
             log.info("Enviado OK (%s) asset=%s", r.status_code,
                      payload["asset_id"])
-            return True
+            try:
+                return r.json()
+            except Exception:
+                return {"ok": True}
         log.error("Servidor respondeu %s: %s", r.status_code, r.text[:200])
     except Exception as e:  # noqa: BLE001
         log.error("Falha no envio: %s", e)
-    return False
+    return None
 
 
 def run_once(cfg, dry_run=False, partial=False):
+    global pending_command_result
     if partial:
         payload = build_partial_payload(cfg)
     else:
         payload = build_payload(cfg)
+
+    # Anexa o resultado de comando se houver
+    if pending_command_result:
+        payload["command_result"] = pending_command_result
+
     if dry_run:
         print(json.dumps(payload, indent=2, ensure_ascii=False, default=str))
-        return True
-    return send_payload(cfg, payload)
+        return {"ok": True}
+
+    resp = send_payload(cfg, payload)
+    if resp is not None:
+        # Se enviou com sucesso, limpamos o comando pendente
+        pending_command_result = None
+    return resp
 
 
 def main():
@@ -762,20 +849,49 @@ def main():
     # Executa primeiro envio completo no arranque
     run_once(cfg, dry_run=args.dry_run, partial=False)
     last_full_scan = time.time()
+    force_full_scan_flag = False
 
     while True:
         try:
             time.sleep(fast_interval)
-            now = time.time()
-            if now - last_full_scan >= interval:
+            
+            # Se foi forçado um escaneamento completo
+            do_full = (time.time() - last_full_scan >= interval) or force_full_scan_flag
+            force_full_scan_flag = False  # Consome a flag
+            
+            if do_full:
                 if not args.dry_run:
                     # Checa por atualizações antes de iniciar a varredura completa
                     check_for_updates(cfg)
-                log.info("Executando inventario completo agendado...")
-                run_once(cfg, dry_run=args.dry_run, partial=False)
-                last_full_scan = now
+                log.info("Executando inventario completo...")
+                resp = run_once(cfg, dry_run=args.dry_run, partial=False)
+                last_full_scan = time.time()
             else:
+                resp = run_once(cfg, dry_run=args.dry_run, partial=True)
+
+            # Trata o comando recebido do servidor (se houver)
+            if resp and isinstance(resp, dict) and resp.get("command"):
+                cmd = resp["command"]
+                action = cmd["action"]
+                cmd_id = cmd["command_id"]
+
+                # Executa o comando
+                out = run_support_command(action)
+
+                # Prepara o resultado para o próximo envio
+                global pending_command_result
+                pending_command_result = {
+                    "id": cmd_id,
+                    "status": "success" if out.startswith("OK:") else "failed",
+                    "output": out
+                }
+
+                if action == "force_scan":
+                    force_full_scan_flag = True
+
+                # Envia o resultado IMEDIATAMENTE sem esperar o intervalo normal
                 run_once(cfg, dry_run=args.dry_run, partial=True)
+
         except KeyboardInterrupt:
             log.info("Encerrando por interrupcao do usuario.")
             break

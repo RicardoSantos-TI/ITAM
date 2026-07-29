@@ -231,7 +231,93 @@ body{padding-top:64px}
 .error-state a{color:var(--brand);font-weight:600}
 .empty-text{font-size:.78rem;color:var(--text-3);padding:.35rem 0 .5rem}
 
-::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+  /* ── Suporte Remoto ── */
+  .support-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+  .support-card {
+    background: var(--paper);
+    border: 1px solid var(--border-light);
+    border-radius: var(--r-md);
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    transition: border-color var(--t), box-shadow var(--t);
+  }
+  .support-card:hover {
+    border-color: var(--brand-border);
+    box-shadow: var(--shadow);
+  }
+  .support-title {
+    font-weight: 700;
+    font-size: 0.84rem;
+    color: var(--text-1);
+  }
+  .support-desc {
+    font-size: 0.76rem;
+    color: var(--text-2);
+    flex: 1;
+  }
+  .support-btn {
+    background: var(--brand);
+    color: #fff;
+    border: none;
+    border-radius: var(--r-sm);
+    padding: 0.45rem 0.85rem;
+    font-size: 0.74rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    transition: background var(--t);
+  }
+  .support-btn:hover {
+    background: var(--brand-hover);
+  }
+  .support-btn:disabled {
+    background: var(--text-dis);
+    cursor: not-allowed;
+  }
+  .console-card {
+    background: #0f172a;
+    border-radius: var(--r-md);
+    padding: 1rem;
+    color: #e2e8f0;
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    line-height: 1.5;
+    min-height: 180px;
+    max-height: 350px;
+    overflow-y: auto;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+  }
+  .console-line {
+    margin-bottom: 0.25rem;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  .console-line.cmd {
+    color: #38bdf8;
+    font-weight: 600;
+  }
+  .console-line.success {
+    color: #4ade80;
+  }
+  .console-line.failed {
+    color: #f87171;
+  }
+  .console-line.info {
+    color: #94a3b8;
+  }
+
+  ::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 </style>
 </head>
 <body>
@@ -343,7 +429,8 @@ body{padding-top:64px}
     printer:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>',
     patch:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/></svg>',
     pulse:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>',
-    pin:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>'
+    pin:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>',
+    tool:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>'
   };
 
   var STATUS_LABEL={ok:'Operacional',atencao:'Atenção',critico:'Crítico',offline:'Offline'};
@@ -666,6 +753,7 @@ body{padding-top:64px}
       +'<button class="tab-btn" data-tab="dispositivos">'+IC.plug+'Dispositivos</button>'
       +'<button class="tab-btn" data-tab="software">'+IC.box+'Software</button>'
       +'<button class="tab-btn" data-tab="localizacao">'+IC.pin+'Localização</button>'
+      +'<button class="tab-btn" data-tab="suporte">'+IC.tool+'Suporte</button>'
       +'</div>'
 
       /* ── Aba: Visão geral ── */
@@ -765,6 +853,41 @@ body{padding-top:64px}
       +'</div>'
       +'<div class="geo-map" id="geo-map"></div>'
       +'</div>'
+      +'</div>'
+
+      /* ── Aba: Suporte ── */
+      +'<div class="tab-content" data-tab="suporte">'
+      +'<div class="sec-card">'
+      +'<div class="sec-head">'+IC.tool+'<span class="sec-title">Comandos de Suporte Remoto</span></div>'
+      +'<div class="sec-body">'
+      +'<div class="support-grid">'
+        +'<div class="support-card">'
+          +'<div class="support-title">Limpar Temporários</div>'
+          +'<div class="support-desc font-sans">Apaga arquivos e pastas temporárias remotamente do Windows para liberar espaço.</div>'
+          +'<button class="support-btn" data-action="clean_temp">Executar</button>'
+        +'</div>'
+        +'<div class="support-card">'
+          +'<div class="support-title">Reiniciar Spooler</div>'
+          +'<div class="support-desc font-sans">Reinicia o serviço de Spooler de Impressão do Windows para resolver filas travadas.</div>'
+          +'<button class="support-btn" data-action="restart_spooler">Executar</button>'
+        +'</div>'
+        +'<div class="support-card">'
+          +'<div class="support-title">Forçar Inventário</div>'
+          +'<div class="support-desc font-sans">Força o agente remoto a executar uma varredura completa de inventário imediatamente.</div>'
+          +'<button class="support-btn" data-action="force_scan">Executar</button>'
+        +'</div>'
+        +'<div class="support-card">'
+          +'<div class="support-title">Diagnóstico de Rede</div>'
+          +'<div class="support-desc font-sans">Testa a conectividade de rede enviando pings do ativo remoto para a internet (8.8.8.8).</div>'
+          +'<button class="support-btn" data-action="ping_check">Executar</button>'
+        +'</div>'
+      +'</div>'
+      +'<p class="sub-label" style="margin-top:1.5rem">Console de Execução</p>'
+      +'<div class="console-card" id="support-console">'
+        +'<div class="console-line info">Aguardando comando ser disparado...</div>'
+      +'</div>'
+      +'</div>'
+      +'</div>'
       +'</div>';
 
     /* ── Render ── */
@@ -806,6 +929,94 @@ body{padding-top:64px}
 
     /* ── Geolocalização (WPS preciso se disponível, senão IP) ── */
     initGeo({fix:geoFix,ip:srcIp,wpsEnabled:wpsEnabled,apCount:wifiApCount});
+
+    /* ── Lógica de Suporte Remoto ── */
+    var supportConsole = qs('#support-console');
+    var supportBtns = qs('#content').querySelectorAll('.support-btn');
+
+    function appendConsoleLine(text, type) {
+      if (!supportConsole) return;
+      var line = document.createElement('div');
+      line.className = 'console-line ' + (type || 'info');
+      line.textContent = '[' + new Date().toLocaleTimeString('pt-BR') + '] ' + text;
+      supportConsole.appendChild(line);
+      supportConsole.scrollTop = supportConsole.scrollHeight;
+    }
+
+    supportBtns.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var action = btn.getAttribute('data-action');
+        var actionName = btn.previousElementSibling.previousElementSibling.textContent;
+
+        supportBtns.forEach(function(b) { b.disabled = true; });
+        btn.textContent = 'Enviando...';
+
+        supportConsole.innerHTML = '';
+        appendConsoleLine('Solicitando execução de "' + actionName + '"...', 'cmd');
+
+        fetch('/api/assets/' + assetId + '/command', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: action })
+        })
+        .then(function(r) {
+          if (!r.ok) throw new Error('Falha ao registrar comando no servidor.');
+          return r.json();
+        })
+        .then(function(res) {
+          var cmdId = res.command_id;
+          appendConsoleLine('Comando registrado no servidor. Aguardando check-in do agente...', 'info');
+
+          var pollCount = 0;
+          var maxPolls = 60;
+
+          var intervalId = setInterval(function() {
+            pollCount++;
+            if (pollCount > maxPolls) {
+              clearInterval(intervalId);
+              appendConsoleLine('Tempo limite excedido. O agente remoto pode estar offline.', 'failed');
+              supportBtns.forEach(function(b) { b.disabled = false; });
+              btn.textContent = 'Executar';
+              return;
+            }
+
+            fetch('/api/assets/' + assetId + '/command/' + cmdId)
+            .then(function(r) { return r.json(); })
+            .then(function(cmdStatus) {
+              if (cmdStatus.status === 'running') {
+                if (pollCount === 1 || pollCount % 4 === 0) {
+                  appendConsoleLine('Agente remoto recebeu o comando. Executando ação...', 'info');
+                }
+              } else if (cmdStatus.status === 'success') {
+                clearInterval(intervalId);
+                appendConsoleLine('Comando executado com sucesso!', 'success');
+                if (cmdStatus.output) {
+                  appendConsoleLine(cmdStatus.output, 'success');
+                }
+                supportBtns.forEach(function(b) { b.disabled = false; });
+                btn.textContent = 'Executar';
+              } else if (cmdStatus.status === 'failed') {
+                clearInterval(intervalId);
+                appendConsoleLine('Falha na execução do comando.', 'failed');
+                if (cmdStatus.output) {
+                  appendConsoleLine(cmdStatus.output, 'failed');
+                }
+                supportBtns.forEach(function(b) { b.disabled = false; });
+                btn.textContent = 'Executar';
+              }
+            })
+            .catch(function(err) {
+              console.error('Erro no polling do comando:', err);
+            });
+          }, 1500);
+        })
+        .catch(function(err) {
+          appendConsoleLine(err.message, 'failed');
+          supportBtns.forEach(function(b) { b.disabled = false; });
+          btn.textContent = 'Executar';
+        });
+      });
+    });
   }
 
   /* ── Load ─────────────────────────────────────────────────── */
