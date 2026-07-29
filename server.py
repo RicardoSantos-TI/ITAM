@@ -43,6 +43,7 @@ GEO_PROVIDER = os.environ.get("GEO_PROVIDER", "").strip().lower()
 GEO_API_KEY = os.environ.get("GEO_API_KEY", "")
 
 DASHBOARD = os.path.join(os.path.dirname(__file__), "dashboard.html")
+ATIVO = os.path.join(os.path.dirname(__file__), "ativo.html")
 
 app = FastAPI(title="Inventario de TI", version="1.2.0")
 
@@ -370,6 +371,15 @@ def dashboard():
             return f.read()
     except FileNotFoundError:
         return "<h1>dashboard.html nao encontrado</h1>"
+
+
+@app.get("/ativo.html", response_class=HTMLResponse)
+def ativo_pagina():
+    try:
+        with open(ATIVO, "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        return "<h1>ativo.html nao encontrado</h1>"
 
 
 @app.get("/ativo-detalhes.html", response_class=HTMLResponse)

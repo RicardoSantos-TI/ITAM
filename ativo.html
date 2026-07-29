@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Console de Ativos · Inventar.IO</title>
+<meta name="description" content="Console de inventário e saúde de ativos de TI · Inventar.IO.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ── Tokens ─────────────────────────────────────────────── */
+  :root{
+    --ink:#0e1726;--ink-2:#16233a;--ink-line:#233149;
+    --paper:#f4f5f7;--surface:#ffffff;
+    --brand:#1c62cb;--brand-hover:#144e9e;--brand-light:#ebf1fb;--brand-border:#c4d6f2;
+    --ok:#1f8a4c;--ok-light:#e9f6ee;--ok-border:#bfe3cd;
+    --warn:#b26a00;--warn-light:#fdf3e1;--warn-border:#f0d9a8;
+    --crit:#c62828;--crit-light:#fceaea;--crit-border:#f2c5c5;
+    --border:#dde1e7;--border-light:#e9ecf0;
+    --text-1:#141f2e;--text-2:#4b5563;--text-3:#7a828e;--text-dis:#b2b8c2;
+    --r-sm:6px;--r-md:8px;--r-lg:10px;--r-xl:14px;
+    --shadow:0 1px 2px #0f172a0a,0 1px 3px #0f172a0f;
+    --shadow-h:0 8px 24px #0f172a14;
+    --sans:'Inter',system-ui,sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+    --t:.15s ease;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--text-1);font-family:var(--sans);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+  :focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+  .mono{font-family:var(--mono)}
+
+  /* ── App bar (fixa, vidro) ──────────────────────────────── */
+  body{padding-top:64px}
+  .appbar{position:fixed;top:0;left:0;right:0;z-index:100;color:#e8ecf3;background:rgba(13,21,36,.88);-webkit-backdrop-filter:blur(16px) saturate(1.6);backdrop-filter:blur(16px) saturate(1.6);border-bottom:1px solid rgba(255,255,255,.07)}
+  .appbar::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:1px;background:linear-gradient(90deg,transparent 5%,rgba(110,168,255,.5),transparent 95%);pointer-events:none}
+  .appbar-inner{max-width:1280px;margin:0 auto;padding:0 2rem;height:64px;display:flex;align-items:center;gap:2rem}
+  @media(max-width:768px){.appbar-inner{padding:0 1rem;gap:1rem}}
+  .brand{display:flex;align-items:center;gap:.7rem;text-decoration:none;color:inherit}
+  .brand-icon{width:34px;height:34px;border-radius:10px;flex:none;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#3b82f6,#1c62cb 55%,#7c5cff);box-shadow:0 4px 14px rgba(28,98,203,.45),inset 0 1px 0 rgba(255,255,255,.28);color:#fff}
+  .brand-name{font-size:.98rem;font-weight:800;letter-spacing:-.01em;line-height:1.15}
+  .brand-name .io{font-family:var(--mono);font-weight:700;color:#6ea8ff}
+  .brand-name small{display:block;font-size:.6rem;font-weight:600;color:#8b97ab;text-transform:uppercase;letter-spacing:.14em}
+  .appbar-nav{display:flex;gap:.25rem;padding:.28rem;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:99px}
+  .appbar-nav a{padding:.42rem 1rem;border-radius:99px;font-size:.8rem;font-weight:600;color:#aeb9ca;text-decoration:none;transition:color var(--t),background var(--t)}
+  .appbar-nav a:hover{color:#fff}
+  .appbar-nav a.active{color:#fff;background:rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+  .appbar-live{margin-left:auto;display:flex;align-items:center;gap:.5rem;padding:.35rem .85rem;border-radius:99px;background:rgba(60,203,114,.1);border:1px solid rgba(60,203,114,.25);font-size:.72rem;font-weight:600;color:#9fe3b8;white-space:nowrap}
+  .live-dot{width:7px;height:7px;background:#3ccb72;border-radius:50%;box-shadow:0 0 8px #3ccb72;animation:live 1.8s infinite}
+  @keyframes live{0%,100%{opacity:.45}50%{opacity:1}}
+  @media(max-width:560px){.appbar-live span+span{display:none}}
+
+  /* ── Page ───────────────────────────────────────────────── */
+  .page{max-width:1280px;margin:0 auto;padding:2rem 2rem 5rem}
+  @media(max-width:768px){.page{padding:1.25rem 1rem 4rem}}
+  .page-head{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1.5rem}
+  .page-head h1{font-size:1.45rem;font-weight:800;letter-spacing:-.015em}
+  .page-head p{font-size:.85rem;color:var(--text-3);margin-top:.15rem}
+  .page-actions{display:flex;gap:.5rem}
+
+  /* ── Buttons ────────────────────────────────────────────── */
+  .btn{display:inline-flex;align-items:center;gap:.45rem;padding:.5rem .95rem;border-radius:var(--r-md);font-family:var(--sans);font-size:.83rem;font-weight:600;cursor:pointer;border:1px solid transparent;transition:background var(--t),border-color var(--t),color var(--t);white-space:nowrap;text-decoration:none}
+  .btn svg{flex:none}
+  .btn-primary{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .btn-primary:hover{background:var(--brand-hover);border-color:var(--brand-hover)}
+  .btn-secondary{background:var(--surface);color:var(--text-1);border-color:var(--border)}
+  .btn-secondary:hover{border-color:var(--text-3);background:var(--paper)}
+
+  /* ── KPIs ───────────────────────────────────────────────── */
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.85rem;margin-bottom:1.5rem}
+  .kpi-card{position:relative;background:var(--surface);border:1px solid var(--border-light);border-radius:var(--r-lg);padding:1rem 1.15rem;box-shadow:var(--shadow);cursor:pointer;transition:box-shadow var(--t),border-color var(--t);overflow:hidden;text-align:left;font-family:var(--sans)}
+  .kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--border)}
+  .kpi-card:hover{box-shadow:var(--shadow-h);border-color:var(--border)}
+  .kpi-card.ok::before{background:var(--ok)}
+  .kpi-card.warn::before{background:var(--warn)}
+  .kpi-card.alert::before{background:var(--crit)}
+  .kpi-card.total::before{background:var(--brand)}
+  .kpi-label{font-size:.7rem;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.4rem}
+  .kpi-value{font-family:var(--mono);font-size:1.9rem;font-weight:700;line-height:1;color:var(--text-1)}
+  .kpi-card.ok .kpi-value{color:var(--ok)}
+  .kpi-card.warn .kpi-value{color:var(--warn)}
+  .kpi-card.alert .kpi-value{color:var(--crit)}
+  .kpi-sub{font-size:.74rem;color:var(--text-3);margin-top:.35rem}
+
+  /* ── Section ────────────────────────────────────────────── */
+  .section-card{background:var(--surface);border:1px solid var(--border-light);border-radius:var(--r-xl);box-shadow:var(--shadow);overflow:hidden}
+  .section-header{display:flex;align-items:center;gap:.6rem;padding:1rem 1.35rem;border-bottom:1px solid var(--border-light)}
+  .section-title{font-size:.95rem;font-weight:700}
+  .section-count{display:inline-flex;align-items:center;justify-content:center;min-width:1.5rem;height:1.35rem;padding:0 .45rem;background:var(--paper);border:1px solid var(--border);border-radius:99px;font-family:var(--mono);font-size:.7rem;font-weight:700;color:var(--text-2)}
+  .section-body{padding:1.25rem 1.35rem}
+
+  /* ── Toolbar ────────────────────────────────────────────── */
+  .controls{display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;margin-bottom:1.25rem}
+  .search{flex:1;min-width:230px;position:relative}
+  .search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);stroke:var(--text-3)}
+  .search input{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text-1);border-radius:var(--r-md);padding:.55rem .9rem .55rem 2.3rem;font-family:var(--sans);font-size:.86rem;transition:border-color var(--t),box-shadow var(--t)}
+  .search input:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px #1c62cb1f}
+  .search input::placeholder{color:var(--text-dis)}
+  .controls-meta{font-size:.75rem;color:var(--text-3);white-space:nowrap}
+  .filter-btns{display:flex;gap:.35rem;flex-wrap:wrap}
+  .filter-btn{display:inline-flex;align-items:center;gap:.4rem;padding:.42rem .8rem;border-radius:99px;font-family:var(--sans);font-size:.78rem;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text-2);transition:background var(--t),border-color var(--t),color var(--t)}
+  .filter-btn:hover{background:var(--paper);border-color:var(--text-3)}
+  .filter-btn.active{background:var(--ink);border-color:var(--ink);color:#fff}
+  .filter-btn .dot{width:7px;height:7px;border-radius:50%;flex:none}
+  .dot-ok{background:var(--ok)}.dot-warn{background:var(--warn)}.dot-error{background:var(--crit)}.dot-offline{background:var(--text-dis)}.dot-total{background:var(--brand)}
+  .filter-btn.active .dot-offline{background:#8b97ab}
+
+  /* ── View Toggle ────────────────────────────────────────── */
+  .view-btns{display:flex;gap:.25rem;background:var(--paper);border:1px solid var(--border);padding:.25rem;border-radius:var(--r-md);margin-left:auto}
+  .view-btn{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border:none;border-radius:var(--r-sm);background:transparent;color:var(--text-3);cursor:pointer;transition:color var(--t),background var(--t)}
+  .view-btn:hover{color:var(--text-1);background:var(--surface)}
+  .view-btn.active{color:var(--brand);background:var(--surface);box-shadow:var(--shadow)}
+  @media(max-width:768px){.view-btns{margin-left:0;width:100%;justify-content:center}}
+
+  /* ── Asset Table ────────────────────────────────────────── */
+  .table-responsive{width:100%;overflow-x:auto;border:1px solid var(--border-light);border-radius:var(--r-lg);background:var(--surface);margin-bottom:.5rem}
+  .asset-table{width:100%;border-collapse:collapse;text-align:left;font-size:.83rem}
+  .asset-table th{padding:.75rem 1rem;background:var(--paper);font-size:.68rem;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.07em;border-bottom:2px solid var(--border-light)}
+  .asset-table td{padding:.75rem 1rem;border-bottom:1px solid var(--border-light);color:var(--text-1);vertical-align:middle}
+  .asset-table tbody tr:hover{background:var(--brand-light)}
+  .asset-table tbody tr{cursor:pointer;transition:background var(--t)}
+  .asset-table .status-cell{display:flex;align-items:center;gap:.5rem;font-family:var(--mono);font-weight:700}
+  .asset-table .progress-mini{display:flex;align-items:center;gap:.5rem;min-width:100px}
+  .asset-table .progress-track{flex:1;height:5px;background:var(--paper);border:1px solid var(--border-light);border-radius:3px;overflow:hidden}
+  .asset-table .progress-fill{height:100%;border-radius:3px}
+  .asset-table .progress-val{font-family:var(--mono);font-size:.72rem;font-weight:600;min-width:28px;text-align:right}
+
+  /* ── Asset grid ─────────────────────────────────────────── */
+  .asset-grid{display:grid;gap:.8rem;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+  .asset-item{background:var(--surface);border:1px solid var(--border-light);border-left-width:3px;border-radius:var(--r-lg);padding:.95rem 1.05rem;cursor:pointer;transition:border-color var(--t),box-shadow var(--t)}
+  .asset-item:hover{box-shadow:var(--shadow-h);border-color:var(--border)}
+  .asset-item.status-critico{border-left-color:var(--crit)}
+  .asset-item.status-atencao{border-left-color:var(--warn)}
+  .asset-item.status-ok{border-left-color:var(--ok)}
+  .asset-item.status-offline{border-left-color:var(--text-dis);opacity:.72}
+  .asset-item.status-critico:hover,.asset-item.status-atencao:hover,.asset-item.status-ok:hover{border-left-color:inherit}
+  .asset-top{display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;margin-bottom:.35rem}
+  .asset-name{font-family:var(--mono);font-size:.88rem;font-weight:700;color:var(--text-1);word-break:break-all;display:flex;align-items:center;gap:.5rem}
+  .status-led{width:8px;height:8px;border-radius:50%;flex:none}
+  .led-ok{background:var(--ok)}
+  .led-warn{background:var(--warn)}
+  .led-critico{background:var(--crit);animation:pulse 1.4s infinite}
+  .led-offline{background:var(--text-dis)}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .asset-sub{font-size:.76rem;color:var(--text-3);margin-bottom:.65rem}
+  .asset-tag{display:inline-flex;align-items:center;padding:.16rem .55rem;background:var(--paper);border:1px solid var(--border);border-radius:99px;font-size:.68rem;font-weight:600;color:var(--text-2);white-space:nowrap}
+  .asset-tag.tag-ok{background:var(--ok-light);border-color:var(--ok-border);color:var(--ok)}
+  .asset-tag.tag-warn{background:var(--warn-light);border-color:var(--warn-border);color:var(--warn)}
+  .asset-tag.tag-error{background:var(--crit-light);border-color:var(--crit-border);color:var(--crit)}
+
+  /* ── Gauges ─────────────────────────────────────────────── */
+  .gauges{display:grid;gap:.45rem;margin:.6rem 0}
+  .gauge-row{display:grid;grid-template-columns:38px 1fr 44px;align-items:center;gap:.6rem}
+  .gauge-label{font-size:.66rem;font-weight:700;color:var(--text-3);letter-spacing:.05em}
+  .gauge-track{height:5px;background:var(--border-light);border-radius:3px;overflow:hidden}
+  .gauge-fill{height:100%;border-radius:3px;transition:width .5s ease}
+  .gauge-val{font-family:var(--mono);font-size:.72rem;font-weight:600;text-align:right}
+  .asset-foot{display:flex;justify-content:space-between;align-items:center;margin-top:.6rem;padding-top:.6rem;border-top:1px solid var(--border-light);font-size:.73rem;color:var(--text-3)}
+  .asset-user{font-family:var(--mono);font-size:.72rem}
+  .detail-link{font-size:.73rem;font-weight:700;color:var(--brand);text-decoration:none;opacity:0;transition:opacity var(--t);pointer-events:none}
+  .asset-item:hover .detail-link,.asset-item:focus-within .detail-link{opacity:1;pointer-events:auto}
+
+  /* ── Empty ──────────────────────────────────────────────── */
+  .empty-state{text-align:center;padding:4.5rem 1.5rem;color:var(--text-3)}
+  .empty-state h2{font-size:1.05rem;font-weight:700;color:var(--text-2);margin-bottom:.4rem}
+  .empty-state a{color:var(--brand);font-weight:600}
+  ::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+</style>
+</head>
+<body>
+
+<header class="appbar">
+  <div class="appbar-inner">
+    <a class="brand" href="/">
+      <div class="brand-icon">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></svg>
+      </div>
+      <div class="brand-name">Inventar<span class="io">.IO</span><small>Gestão de ativos</small></div>
+    </a>
+    <nav class="appbar-nav">
+      <a href="/dashboard.html">Dashboard</a>
+      <a href="/ativo.html" class="active">Ativos</a>
+      <a href="/instalar.html">Instalar agente</a>
+    </nav>
+    <div class="appbar-live" title="Atualização automática a cada 5 segundos">
+      <span class="live-dot"></span><span>Monitorando</span>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+  <div class="page-head">
+    <div>
+      <h1>Console de ativos</h1>
+      <p>Inventário e saúde do parque de máquinas em tempo real.</p>
+    </div>
+    <div class="page-actions">
+      <a href="/instalar.html" class="btn btn-secondary">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Instalar agente
+      </a>
+      <button class="btn btn-primary" id="btn-refresh">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/></svg>
+        Atualizar
+      </button>
+    </div>
+  </div>
+
+  <div class="kpi-grid">
+    <button class="kpi-card total" id="kc-total" data-filter="all">
+      <div class="kpi-label">Total de ativos</div>
+      <div class="kpi-value" id="kpi-total">0</div>
+      <div class="kpi-sub">no inventário</div>
+    </button>
+    <button class="kpi-card ok" id="kc-ok" data-filter="ok">
+      <div class="kpi-label">Operacionais</div>
+      <div class="kpi-value" id="kpi-ok">0</div>
+      <div class="kpi-sub">online e saudáveis</div>
+    </button>
+    <button class="kpi-card warn" id="kc-atencao" data-filter="atencao">
+      <div class="kpi-label">Atenção</div>
+      <div class="kpi-value" id="kpi-atencao">0</div>
+      <div class="kpi-sub">requerem revisão</div>
+    </button>
+    <button class="kpi-card alert" id="kc-critico" data-filter="critico">
+      <div class="kpi-label">Críticos</div>
+      <div class="kpi-value" id="kpi-critico">0</div>
+      <div class="kpi-sub">falha ou risco</div>
+    </button>
+    <button class="kpi-card" id="kc-offline" data-filter="offline">
+      <div class="kpi-label">Offline</div>
+      <div class="kpi-value" id="kpi-offline">0</div>
+      <div class="kpi-sub">sem sinal</div>
+    </button>
+  </div>
+
+  <div class="section-card">
+    <div class="section-header">
+      <span class="section-title">Inventário de ativos</span>
+      <span class="section-count" id="asset-count">0</span>
+    </div>
+    <div class="section-body">
+      <div class="controls">
+        <label class="search">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke-width="2">
+            <circle cx="11" cy="11" r="7"/>
+            <path d="m21 21-4.3-4.3"/>
+          </svg>
+          <input id="search" placeholder="Buscar por host, usuário, sistema ou setor..." autocomplete="off">
+        </label>
+        <div class="filter-btns">
+          <button class="filter-btn active" id="fb-all"     data-filter="all">     <span class="dot dot-total"></span> Todos</button>
+          <button class="filter-btn"        id="fb-ok"      data-filter="ok">      <span class="dot dot-ok"></span> OK</button>
+          <button class="filter-btn"        id="fb-atencao" data-filter="atencao"> <span class="dot dot-warn"></span> Atenção</button>
+          <button class="filter-btn"        id="fb-critico" data-filter="critico"> <span class="dot dot-error"></span> Crítico</button>
+          <button class="filter-btn"        id="fb-offline" data-filter="offline"> <span class="dot dot-offline"></span> Offline</button>
+        </div>
+        <div class="view-btns">
+          <button class="view-btn" id="vb-grid" title="Visualização em Grade">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          </button>
+          <button class="view-btn" id="vb-table" title="Visualização em Tabela">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3" y2="6"/><line x1="3" y1="12" x2="3" y2="12"/><line x1="3" y1="18" x2="3" y2="18"/></svg>
+          </button>
+        </div>
+        <span class="controls-meta" id="meta">carregando...</span>
+      </div>
+      <div class="asset-grid" id="grid"></div>
+      <div class="table-responsive" id="table-view-wrap" style="display:none">
+        <table class="asset-table">
+          <thead>
+            <tr>
+              <th>Ativo</th>
+              <th>Setor</th>
+              <th>Sistema Operacional</th>
+              <th>CPU</th>
+              <th>Memória</th>
+              <th>Disco</th>
+              <th>Usuário</th>
+              <th>Visto por último</th>
+              <th style="text-align: right">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
+      <div class="empty-state" id="empty" style="display:none">
+        <h2>Nenhum ativo cadastrado</h2>
+        <p><a href="/instalar.html">Instale o agente</a> numa máquina e aponte-o para este servidor.</p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+(function(){
+  var qs = function(s){ return document.querySelector(s); };
+
+  var ST = {
+    ok:      { led:'led-ok',      tag:'tag-ok' },
+    atencao: { led:'led-warn',    tag:'tag-warn' },
+    critico: { led:'led-critico', tag:'tag-error' },
+    offline: { led:'led-offline', tag:'' }
+  };
+
+  var assets = [], activeFilter = 'all', searchQuery = '';
+  var viewMode = localStorage.getItem('itam_view_mode') || 'grid';
+
+  function gc(v){
+    if(v==null) return 'var(--text-dis)';
+    if(v>=90) return 'var(--crit)';
+    if(v>=75) return 'var(--warn)';
+    return 'var(--ok)';
+  }
+  function ago(iso){
+    if(!iso) return '—';
+    var s=(Date.now()-new Date(iso))/1000;
+    if(s<90) return 'agora';
+    if(s<5400) return Math.round(s/60)+' min';
+    if(s<172800) return Math.round(s/3600)+' h';
+    return Math.round(s/86400)+' d';
+  }
+  function gH(label,val){
+    var w=val==null?0:Math.min(100,val), c=gc(val);
+    return '<div class="gauge-row">'
+      +'<span class="gauge-label">'+label+'</span>'
+      +'<div class="gauge-track"><div class="gauge-fill" style="width:'+w+'%;background:'+c+'"></div></div>'
+      +'<span class="gauge-val" style="color:'+c+'">'+(val==null?'—':Math.round(val)+'%')+'</span>'
+      +'</div>';
+  }
+  function gTableBar(val){
+    if(val==null) return '<span style="color:var(--text-dis)">—</span>';
+    var w=Math.min(100,val), c=gc(val);
+    return '<div class="progress-mini">'
+      +'<div class="progress-track"><div class="progress-fill" style="width:'+w+'%;background:'+c+'"></div></div>'
+      +'<span class="progress-val" style="color:'+c+'">'+Math.round(val)+'%</span>'
+      +'</div>';
+  }
+
+  function renderKPIs(s){
+    qs('#kpi-total').textContent   = s.total   || 0;
+    qs('#kpi-ok').textContent      = s.ok      || 0;
+    qs('#kpi-atencao').textContent = s.atencao || 0;
+    qs('#kpi-critico').textContent = s.critico || 0;
+    qs('#kpi-offline').textContent = s.offline || 0;
+  }
+
+  function matches(a){
+    if(activeFilter!=='all'&&a.status!==activeFilter) return false;
+    if(!searchQuery) return true;
+    var hay=[a.hostname,a.user,a.os,a.tags&&a.tags.setor].join(' ').toLowerCase();
+    return hay.indexOf(searchQuery)>-1;
+  }
+
+  function render(){
+    var list=assets.filter(matches);
+    qs('#asset-count').textContent=list.length;
+    qs('#empty').style.display=assets.length===0?'block':'none';
+
+    // Sincroniza botões ativos do toggle
+    document.querySelectorAll('.view-btn').forEach(function(b){ b.classList.remove('active'); });
+    var activeBtn = qs('#vb-' + viewMode);
+    if (activeBtn) activeBtn.classList.add('active');
+
+    if (viewMode === 'grid') {
+      qs('#grid').style.display='grid';
+      qs('#table-view-wrap').style.display='none';
+
+      qs('#grid').innerHTML=list.map(function(a){
+        var st=ST[a.status]||ST.ok;
+        return '<article class="asset-item status-'+a.status+'" data-id="'+a.asset_id+'">'
+          +'<div class="asset-top">'
+          +'<div class="asset-name"><span class="status-led '+st.led+'"></span>'+(a.hostname||'—')+'</div>'
+          +(a.tags&&a.tags.setor?'<span class="asset-tag '+st.tag+'">'+a.tags.setor+'</span>':'')
+          +'</div>'
+          +'<div class="asset-sub">'+(a.os||'Sistema desconhecido')+'</div>'
+          +'<div class="gauges">'+gH('CPU',a.cpu)+gH('RAM',a.memory)+gH('DISCO',a.disk)+'</div>'
+          +'<div class="asset-foot"><span class="asset-user">'+(a.user||'—')+'</span>'
+          +'<div style="display:flex;align-items:center;gap:.55rem">'
+          +'<span>visto '+ago(a.last_seen)+'</span>'
+          +'<a class="detail-link" href="ativo-detalhes.html?id='+a.asset_id+'" onclick="event.stopPropagation()">Detalhes &rarr;</a>'
+          +'</div></div>'
+          +'</article>';
+      }).join('');
+
+      qs('#grid').querySelectorAll('.asset-item').forEach(function(el){
+        el.addEventListener('click',function(){
+          window.location.href = 'ativo-detalhes.html?id=' + encodeURIComponent(el.dataset.id);
+        });
+      });
+    } else {
+      qs('#grid').style.display='none';
+      qs('#table-view-wrap').style.display='block';
+
+      qs('#table-body').innerHTML=list.map(function(a){
+        var st=ST[a.status]||ST.ok;
+        return '<tr class="table-row" data-id="'+a.asset_id+'">'
+          +'<td><div class="status-cell"><span class="status-led '+st.led+'"></span>'+(a.hostname||'—')+'</div></td>'
+          +'<td>'+(a.tags&&a.tags.setor?'<span class="asset-tag '+st.tag+'">'+a.tags.setor+'</span>':'<span style="color:var(--text-dis)">—</span>')+'</td>'
+          +'<td style="color:var(--text-2)">'+(a.os||'Sistema desconhecido')+'</td>'
+          +'<td>'+gTableBar(a.cpu)+'</td>'
+          +'<td>'+gTableBar(a.memory)+'</td>'
+          +'<td>'+gTableBar(a.disk)+'</td>'
+          +'<td class="mono" style="font-size:.78rem">'+(a.user||'—')+'</td>'
+          +'<td style="color:var(--text-3);font-size:.78rem">visto '+ago(a.last_seen)+'</td>'
+          +'<td style="text-align: right">'
+          +'<a class="detail-link" style="opacity:1;pointer-events:auto" href="ativo-detalhes.html?id='+a.asset_id+'" onclick="event.stopPropagation()">Detalhes &rarr;</a>'
+          +'</td>'
+          +'</tr>';
+      }).join('') || '<tr><td colspan="9" style="text-align: center; color: var(--text-3); padding: 2rem;">Nenhum ativo encontrado.</td></tr>';
+
+      qs('#table-body').querySelectorAll('.table-row').forEach(function(el){
+        el.addEventListener('click',function(){
+          window.location.href = 'ativo-detalhes.html?id=' + encodeURIComponent(el.dataset.id);
+        });
+      });
+    }
+  }
+  function setViewMode(mode){
+    viewMode = mode;
+    localStorage.setItem('itam_view_mode', mode);
+    render();
+  }
+
+  function setFilter(f){
+    activeFilter=f;
+    document.querySelectorAll('.filter-btn').forEach(function(b){ b.classList.remove('active'); });
+    qs('#fb-'+f).classList.add('active');
+    render();
+  }
+
+  function load(){
+    Promise.all([
+      fetch('/api/assets').then(function(r){return r.json();}),
+      fetch('/api/summary').then(function(r){return r.json();})
+    ]).then(function(results){
+      assets=results[0];
+      renderKPIs(results[1]);
+      render();
+      qs('#meta').textContent=assets.length+' ativo(s) · '+new Date().toLocaleTimeString('pt-BR');
+    }).catch(function(){
+      qs('#meta').textContent='erro de conexão com o servidor';
+      assets=[];
+      renderKPIs({total:0,ok:0,atencao:0,critico:0,offline:0});
+      render();
+    });
+  }
+
+  qs('#search').addEventListener('input', function(e){ searchQuery=e.target.value.toLowerCase().trim(); render(); });
+  qs('#btn-refresh').addEventListener('click', load);
+  document.querySelectorAll('.filter-btn, .kpi-card').forEach(function(btn){
+    btn.addEventListener('click', function(){ setFilter(btn.dataset.filter); });
+  });
+  qs('#vb-grid').addEventListener('click', function(){ setViewMode('grid'); });
+  qs('#vb-table').addEventListener('click', function(){ setViewMode('table'); });
+
+  load();
+  setInterval(load, 5000);
+})();
+</script>
+</body>
+</html>
