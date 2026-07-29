@@ -37,30 +37,32 @@ $serverProcess = Start-Process python -ArgumentList "-m", "uvicorn", "server:app
 Start-Sleep -Seconds 2
 Write-Host "✅ Servidor iniciado (PID: $($serverProcess.Id))`n" -ForegroundColor Green
 
-# Executar o agente para coletar dados
-Write-Host "[4/4] Coletando dados da máquina com o agente..." -ForegroundColor Yellow
-python agent.py --dry-run | Out-Null
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "⚠️  Aviso: Agente teve algum problema, mas prosseguindo..." -ForegroundColor Yellow
-}
-
-# Enviar dados para o servidor
-Write-Host "Enviando dados coletados para o servidor..." -ForegroundColor Yellow
-python agent.py
+# Iniciar o agente em background (Modo Loop)
+Write-Host "[4/4] Iniciando o agente em segundo plano (Modo Loop/Tempo Real)..." -ForegroundColor Yellow
+$agentProcess = Start-Process python -ArgumentList "agent.py", "--loop" -PassThru -NoNewWindow
 Start-Sleep -Seconds 1
+Write-Host "✅ Agente iniciado (PID: $($agentProcess.Id))`n" -ForegroundColor Green
 
 Write-Host "`n================================================" -ForegroundColor Cyan
-Write-Host "✅ TUDO PRONTO!" -ForegroundColor Green
+Write-Host "✅ TUDO PRONTO E FUNCIONANDO EM TEMPO REAL!" -ForegroundColor Green
 Write-Host "================================================`n" -ForegroundColor Cyan
 
 Write-Host "📊 Abra em seu navegador:" -ForegroundColor Yellow
 Write-Host "   http://localhost:8000/" -ForegroundColor Cyan
-Write-Host "`nOu acesse os detalhes:" -ForegroundColor Yellow  
-Write-Host "   http://localhost:8000/ativo-detalhes.html?id=1" -ForegroundColor Cyan
+Write-Host "`nOu acesse os detalhes do seu ativo clicando nele no console." -ForegroundColor Yellow  
 
 Write-Host "`n⚠️  IMPORTANTE:" -ForegroundColor Yellow
-Write-Host "   O servidor está rodando. Deixe este terminal aberto." -ForegroundColor White
-Write-Host "   Para parar: Pressione Ctrl+C`n" -ForegroundColor White
+Write-Host "   O servidor e o agente estão rodando em segundo plano." -ForegroundColor White
+Write-Host "   Deixe este terminal aberto." -ForegroundColor White
+Write-Host "   Para encerrar ambos: Pressione Ctrl+C`n" -ForegroundColor White
 
-# Aguardar que o servidor continue rodando
-$serverProcess | Wait-Process
+try {
+    # Aguardar que o servidor continue rodando
+    $serverProcess | Wait-Process
+}
+finally {
+    Write-Host "`nEncerrando processos..." -ForegroundColor Yellow
+    Stop-Process -Id $serverProcess.Id -Force -ErrorAction SilentlyContinue
+    Stop-Process -Id $agentProcess.Id -Force -ErrorAction SilentlyContinue
+    Write-Host "✅ Servidor e agente finalizados com sucesso!" -ForegroundColor Green
+}
