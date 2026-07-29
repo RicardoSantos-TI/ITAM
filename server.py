@@ -336,10 +336,26 @@ def get_user_department(logged_user: str) -> str | None:
     if "\\" in user_clean:
         user_clean = user_clean.split("\\")[-1]
 
-    csv_path = os.path.join(os.path.dirname(__file__), "usersSP_2026-7-29.csv")
-    if not os.path.exists(csv_path):
-        csv_path = os.path.join(os.path.dirname(__file__), "fido-usuarios-s_o_paulo-s_o_paulo-all-2026-07-29.csv")
-        if not os.path.exists(csv_path):
+    # Procurar dinamicamente por arquivos que combinam com o padrão usersSP*.csv
+    import glob
+    server_dir = os.path.dirname(__file__)
+    found_files = glob.glob(os.path.join(server_dir, "usersSP*.csv"))
+    
+    if found_files:
+        csv_path = found_files[0]
+    else:
+        # Fallback para caminhos conhecidos específicos
+        csv_paths = [
+            os.path.join(server_dir, "usersSP2026-07-29.csv"),
+            os.path.join(server_dir, "usersSP_2026-7-29.csv"),
+            os.path.join(server_dir, "fido-usuarios-s_o_paulo-s_o_paulo-all-2026-07-29.csv")
+        ]
+        csv_path = None
+        for p in csv_paths:
+            if os.path.exists(p):
+                csv_path = p
+                break
+        if not csv_path:
             return None
 
     try:
