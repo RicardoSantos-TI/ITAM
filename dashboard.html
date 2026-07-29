@@ -121,6 +121,82 @@
   .icon-wrap{display:inline-flex;stroke:var(--text-3);flex:none}
   
   ::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+  /* ── Custom Tooltip for Unit Areas ── */
+  .chart-tooltip {
+    position: absolute;
+    display: none;
+    z-index: 10000;
+    background: rgba(14, 23, 38, 0.96);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--r-md);
+    padding: 0.85rem 1.15rem;
+    color: #fff;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+    pointer-events: none;
+    font-size: 0.76rem;
+    min-width: 240px;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+  .tooltip-title {
+    font-weight: 800;
+    font-size: 0.8rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    padding-bottom: 0.4rem;
+    margin-bottom: 0.6rem;
+    color: #6ea8ff;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .tooltip-row {
+    display: grid;
+    grid-template-columns: 80px 1fr 45px;
+    align-items: center;
+    gap: 0.65rem;
+    margin-bottom: 0.45rem;
+  }
+  .tooltip-row:last-child {
+    margin-bottom: 0;
+  }
+  .tooltip-label {
+    font-weight: 600;
+    color: #e5e7eb;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .tooltip-track {
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .tooltip-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, #3b82f6, #6ea8ff);
+  }
+  .tooltip-val {
+    font-family: var(--mono);
+    font-weight: 700;
+    text-align: right;
+    color: #3ccb72;
+  }
+  
+  #unit-chart-body .chart-row {
+    cursor: help;
+    transition: background var(--t);
+    border-radius: var(--r-sm);
+    padding: 0.35rem;
+    margin-left: -0.35rem;
+    margin-right: -0.35rem;
+  }
+  #unit-chart-body .chart-row:hover {
+    background: rgba(0, 0, 0, 0.03);
+  }
 </style>
 </head>
 <body>
@@ -252,6 +328,7 @@
     </section>
   </div>
 </main>
+<div id="chart-tooltip" class="chart-tooltip"></div>
 
 <script>
 (function(){
@@ -365,9 +442,87 @@
     }).join('');
   }
 
+  function buildUnitsChart(data, elementId) {
+    var entries = Object.entries(data).sort(function(a, b){ return b[1] - a[1]; });
+    var total = entries.reduce(function(acc, curr){ return acc + curr[1]; }, 0);
+    
+    if (total === 0) {
+      qs('#' + elementId).innerHTML = '<div class="empty-state">Sem dados disponíveis.</div>';
+      return;
+    }
+
+    qs('#' + elementId).innerHTML = entries.map(function(entry){
+      var label = entry[0];
+      var val = entry[1];
+      var pct = total > 0 ? (val / total * 100).toFixed(1) : 0;
+      return '<div class="chart-row unit-row" data-unit="'+label+'">'
+        +'<span class="chart-label" title="'+label+'">'+label+'</span>'
+        +'<div class="chart-track"><div class="chart-fill" style="width:'+pct+'%"></div></div>'
+        +'<span class="chart-val">'+val+'<span class="chart-pct">('+pct+'%)</span></span>'
+        +'</div>';
+    }).join('');
+
+    // Adiciona listeners para hover de unidades e setores
+    var tooltip = qs('#chart-tooltip');
+    document.querySelectorAll('.unit-row').forEach(function(row){
+      row.addEventListener('mouseenter', function(e){
+        var unit = row.getAttribute('data-unit');
+        var sectors = window.itam_units_sectors && window.itam_units_sectors[unit];
+        if (!sectors) return;
+
+        var sectorEntries = Object.entries(sectors).sort(function(a,b){ return b[1] - a[1]; });
+        var sectTotal = sectorEntries.reduce(function(acc, curr){ return acc + curr[1]; }, 0);
+
+        var html = '<div class="tooltip-title">' + unit + ' · Áreas</div>';
+        if (sectTotal === 0) {
+          html += '<div style="color: rgba(255,255,255,0.4)">Sem áreas registradas</div>';
+        } else {
+          html += sectorEntries.map(function(se){
+            var secName = se[0] || 'NÃO DEFINIDA';
+            var secVal = se[1];
+            var secPct = sectTotal > 0 ? (secVal / sectTotal * 100).toFixed(0) : 0;
+            return '<div class="tooltip-row">'
+              +'<span class="tooltip-label" title="'+secName+'">'+secName+'</span>'
+              +'<div class="tooltip-track"><div class="tooltip-fill" style="width:'+secPct+'%"></div></div>'
+              +'<span class="tooltip-val">'+secVal+' <small style="font-size:0.6rem;color:rgba(255,255,255,0.4);font-weight:normal">'+secPct+'%</small></span>'
+              +'</div>';
+          }).join('');
+        }
+
+        tooltip.innerHTML = html;
+        tooltip.style.display = 'block';
+        setTimeout(function(){ tooltip.style.opacity = '1'; }, 10);
+      });
+
+      row.addEventListener('mousemove', function(e){
+        var offset = 15;
+        var tWidth = tooltip.offsetWidth || 240;
+        var tHeight = tooltip.offsetHeight || 150;
+        var left = e.pageX + offset;
+        var top = e.pageY + offset;
+
+        if (left + tWidth > window.innerWidth + window.scrollX) {
+          left = e.pageX - tWidth - offset;
+        }
+        if (top + tHeight > window.innerHeight + window.scrollY) {
+          top = e.pageY - tHeight - offset;
+        }
+
+        tooltip.style.left = left + 'px';
+        tooltip.style.top = top + 'px';
+      });
+
+      row.addEventListener('mouseleave', function(){
+        tooltip.style.opacity = '0';
+        tooltip.style.display = 'none';
+      });
+    });
+  }
+
   function processData(assets) {
     var units = {};
     var types = {};
+    var unitsSectors = {};
     
     var sumCpu = 0, countCpu = 0;
     var sumRam = 0, countRam = 0;
@@ -379,6 +534,13 @@
       // 1. Unidade
       var u = getUnit(a.hostname);
       units[u] = (units[u] || 0) + 1;
+
+      // Setores por Unidade
+      var s = (a.tags && a.tags.setor) ? a.tags.setor.trim().toUpperCase() : 'OUTROS';
+      if (!unitsSectors[u]) {
+        unitsSectors[u] = {};
+      }
+      unitsSectors[u][s] = (unitsSectors[u][s] || 0) + 1;
 
       // 2. Tipo
       var t = getDeviceType(a.hostname, a.os);
@@ -409,8 +571,11 @@
       }
     });
 
+    // Salva setores globalmente
+    window.itam_units_sectors = unitsSectors;
+
     // Renderiza Gráficos
-    buildHorizontalChart(units, 'unit-chart-body');
+    buildUnitsChart(units, 'unit-chart-body');
     buildHorizontalChart(types, 'type-chart-body');
 
     // Renderiza Médias de Performance
