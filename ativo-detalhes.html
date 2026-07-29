@@ -187,6 +187,20 @@ body{padding-top:64px}
 .net-pill.ip{border-color:var(--brand-border);background:var(--brand-light);color:var(--brand)}
 .net-pill.mac{color:var(--text-3)}
 
+/* ── Localização (geo por IP) ───────────────────────────────── */
+.geo-map{border-top:1px solid var(--border-light)}
+.geo-map iframe{width:100%;height:210px;border:0;display:block}
+.geo-note{font-size:.68rem;color:var(--text-3);padding:.5rem 1.15rem .7rem;border-top:1px solid var(--border-light)}
+.online-badge{display:inline-flex;align-items:center;gap:.35rem;font-family:var(--mono);font-size:.78rem;font-weight:600}
+.online-badge .led{width:7px;height:7px;border-radius:50%;flex:none}
+.online-badge.on{color:var(--ok)}
+.online-badge.on .led{background:var(--ok);box-shadow:0 0 6px var(--ok)}
+.online-badge.off{color:var(--text-3)}
+.online-badge.off .led{background:var(--text-dis)}
+.geo-btn{margin-left:auto;padding:.3rem .7rem;border-radius:99px;border:1px solid var(--brand-border);background:var(--brand-light);color:var(--brand);font-family:var(--sans);font-size:.7rem;font-weight:700;cursor:pointer;transition:background var(--t),border-color var(--t)}
+.geo-btn:hover{background:var(--brand);color:#fff;border-color:var(--brand)}
+.geo-btn:disabled{opacity:.55;cursor:default}
+
 /* ── Discos ─────────────────────────────────────────────────── */
 .disk-item{background:var(--paper);border:1px solid var(--border-light);border-radius:var(--r-md);padding:.7rem .9rem;margin-bottom:.4rem}
 .disk-item:last-child{margin-bottom:0}
@@ -327,7 +341,8 @@ body{padding-top:64px}
     search:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>',
     printer:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>',
     patch:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/></svg>',
-    pulse:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>'
+    pulse:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>',
+    pin:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>'
   };
 
   var STATUS_LABEL={ok:'Operacional',atencao:'Atenção',critico:'Crítico',offline:'Offline'};
@@ -338,7 +353,9 @@ body{padding-top:64px}
 
   /* ── Dados demo ──────────────────────────────────────────── */
   var DEMO={
-    '1':{asset_id:'1',hostname:'WS-JURIDICO-01',status:'ok',last_seen:new Date(Date.now()-120000).toISOString(),
+    '1':{asset_id:'1',hostname:'WS-JURIDICO-01',status:'ok',online:true,source_ip:'200.160.2.3',wps_enabled:true,wifi_ap_count:6,
+      _geo:{lat:-23.55841,lng:-46.66012,accuracy:34,provider:'google',located_at:new Date(Date.now()-300000).toISOString()},
+      last_seen:new Date(Date.now()-120000).toISOString(),
       tags:{setor:'Jurídico'},
       system:{manufacturer:'Dell',model:'OptiPlex 7090',bios_serial:'DL7090-0001',domain:'inventar.local',logged_user:'ana.souza',os_caption:'Windows 11 Pro 23H2',uptime_seconds:342000},
       hardware:{
@@ -374,7 +391,7 @@ body{padding-top:64px}
         {name:'Node.js',version:'20.14.0'}
       ]
     },
-    '2':{asset_id:'2',hostname:'WS-ADM-02',status:'atencao',last_seen:new Date(Date.now()-900000).toISOString(),
+    '2':{asset_id:'2',hostname:'WS-ADM-02',status:'atencao',online:true,source_ip:'192.168.1.102',last_seen:new Date(Date.now()-900000).toISOString(),
       tags:{setor:'Administrativo'},
       system:{manufacturer:'HP',model:'EliteDesk 800 G6',bios_serial:'HP800G6-0002',domain:'inventar.local',logged_user:'carlos.lima',os_caption:'Windows 10 Pro 22H2',uptime_seconds:86400},
       hardware:{cpu:{name:'Intel Core i5-10500',cores_physical:6,cores_logical:12,freq_mhz:3100},memory:{total_bytes:8589934592},gpu:[{name:'Intel UHD Graphics 630'}],disks:[{model:'Kingston A400 240GB',size_bytes:240057409536,interface:'SATA'}]},
@@ -383,7 +400,7 @@ body{padding-top:64px}
       devices:{usb:[{name:'USB Keyboard'},{name:'USB Mouse'}],monitors:[{product:'HP EliteDisplay E243',serial:'SN11111'}],removable_drives:[]},
       software:[{name:'Microsoft 365',version:'16.0.17100'},{name:'Google Chrome',version:'124.0'},{name:'Adobe Reader',version:'23.0'}]
     },
-    '5':{asset_id:'5',hostname:'WS-CONTAB-03',status:'critico',last_seen:new Date(Date.now()-200000).toISOString(),
+    '5':{asset_id:'5',hostname:'WS-CONTAB-03',status:'critico',online:true,source_ip:'192.168.1.105',last_seen:new Date(Date.now()-200000).toISOString(),
       tags:{setor:'Contabilidade'},
       system:{manufacturer:'Lenovo',model:'ThinkCentre M70q',bios_serial:'LN70Q-0005',domain:'inventar.local',logged_user:'beatriz.melo',os_caption:'Windows 10 Pro 21H2',uptime_seconds:604800},
       hardware:{cpu:{name:'Intel Core i3-10100',cores_physical:4,cores_logical:8,freq_mhz:3600},memory:{total_bytes:4294967296},gpu:[{name:'Intel UHD Graphics 630'}],disks:[{model:'Seagate 500GB HDD',size_bytes:500107862016,interface:'SATA'}]},
@@ -470,6 +487,89 @@ body{padding-top:64px}
       +'</div>';
   }
 
+  /* ── Geolocalização: WPS preciso (mapa com raio) ou fallback por IP ── */
+  function isPrivateIp(ip){
+    return !ip||/^(10\.|127\.|169\.254\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|::1$|fe80:|fc|fd)/i.test(ip);
+  }
+  function mapEmbed(lat,lon,acc){
+    // Raio de zoom proporcional a precisão (metros -> graus aprox.)
+    var d=Math.max(0.004,(acc||120)/111000*2.2);
+    return '<iframe title="Mapa da localização do ativo" loading="lazy" '
+      +'src="https://www.openstreetmap.org/export/embed.html?bbox='
+      +(lon-d)+'%2C'+(lat-d)+'%2C'+(lon+d)+'%2C'+(lat+d)
+      +'&amp;layer=mapnik&amp;marker='+lat+'%2C'+lon+'"></iframe>';
+  }
+  function renderFix(fix){
+    var lat=fix.lat,lon=fix.lng,acc=fix.accuracy;
+    var provLabel=fix.provider==='google'?'Google (Wi-Fi)':
+                  fix.provider==='beacondb'?'BeaconDB (Wi-Fi)':fix.provider||'Wi-Fi';
+    qs('#geo-body').innerHTML=
+      infoItem('Método','Wi-Fi (WPS)')
+      +infoItem('Coordenadas',lat.toFixed(5)+', '+lon.toFixed(5))
+      +infoItem('Precisão',acc!=null?'± '+Math.round(acc)+' m':'—')
+      +infoItem('Fonte',provLabel)
+      +infoItem('Calculado',ago(fix.located_at));
+    qs('#geo-map').innerHTML=mapEmbed(lat,lon,acc)
+      +'<div class="geo-note">Posição por triangulação de Wi-Fi, precisão de ± '
+      +(acc!=null?Math.round(acc):'?')+' m.</div>';
+  }
+  function loadIpGeo(ip){
+    var statusEl=qs('#geo-status');
+    if(!statusEl)return;
+    if(isPrivateIp(ip)){
+      statusEl.textContent='IP de rede interna — geolocalização por IP indisponível. '
+        +'Use "Localizar por Wi-Fi" para posição precisa.';
+      return;
+    }
+    fetch('https://ipapi.co/'+encodeURIComponent(ip)+'/json/')
+      .then(function(r){return r.json();})
+      .then(function(g){
+        if(!g||g.error||g.latitude==null)throw new Error('geo');
+        qs('#geo-body').innerHTML=
+          infoItem('Método','IP público (aproximado)')
+          +infoItem('IP',ip)
+          +infoItem('Cidade',g.city)
+          +infoItem('Região',[g.region,g.country_name].filter(Boolean).join(' · '))
+          +infoItem('Provedor',g.org)
+          +infoItem('Coordenadas',g.latitude.toFixed(5)+', '+g.longitude.toFixed(5));
+        qs('#geo-map').innerHTML=mapEmbed(g.latitude,g.longitude,5000)
+          +'<div class="geo-note">Localização aproximada por IP (precisão de cidade). '
+          +'Para posição precisa, use Wi-Fi.</div>';
+      })
+      .catch(function(){ statusEl.textContent='Não foi possível geolocalizar o IP '+ip+'.'; });
+  }
+  function locateByWifi(){
+    var btn=qs('#geo-locate'), statusEl=qs('#geo-status');
+    if(btn){btn.disabled=true;btn.textContent='Localizando...';}
+    fetch('/api/assets/'+encodeURIComponent(assetId)+'/locate',{method:'POST'})
+      .then(function(r){return r.json().then(function(j){return {ok:r.ok,body:j};});})
+      .then(function(res){
+        if(!res.ok)throw new Error(res.body&&res.body.detail||'falha');
+        renderFix(res.body);
+      })
+      .catch(function(e){
+        if(statusEl)statusEl.textContent='Wi-Fi: '+(e.message||'não foi possível localizar')
+          +'. Mostrando aproximação por IP.';
+        loadIpGeo(srcIpGlobal);
+      })
+      .finally(function(){ if(btn){btn.disabled=false;btn.textContent='Localizar por Wi-Fi';} });
+  }
+  var srcIpGlobal=null;
+  function initGeo(ctx){
+    srcIpGlobal=ctx.ip;
+    var btn=qs('#geo-locate');
+    if(btn)btn.addEventListener('click',locateByWifi);
+    if(ctx.fix){ renderFix(ctx.fix); return; }          // já tem posição Wi-Fi salva
+    var statusEl=qs('#geo-status');
+    if(ctx.wpsEnabled && statusEl){
+      statusEl.textContent = ctx.apCount>0
+        ? 'Wi-Fi disponível ('+ctx.apCount+' redes no último inventário). '
+          +'Clique em "Localizar por Wi-Fi" para posição precisa.'
+        : 'Sem redes Wi-Fi no último inventário. Mostrando aproximação por IP...';
+    }
+    loadIpGeo(ctx.ip);                                   // fallback imediato por IP
+  }
+
   /* ── Render ──────────────────────────────────────────────── */
   function renderPage(a){
     var sys=a.system||{}, hw=a.hardware||{}, dev=a.devices||{},
@@ -482,6 +582,12 @@ body{padding-top:64px}
     var ramVal =health.memory_percent!=null?health.memory_percent:(a.memory!=null?a.memory:null);
     var diskVal=health.disk_worst_percent!=null?health.disk_worst_percent:(a.disk!=null?a.disk:null);
     var st=a.status||'ok';
+    /* "online" vem do servidor (limiar OFFLINE_AFTER_SECONDS); fallback pelo status */
+    var isOnline=(a.online!=null)?!!a.online:(st!=='offline');
+    var srcIp=a.source_ip||(a._ingest&&a._ingest.source_ip)||null;
+    var wpsEnabled=!!a.wps_enabled;
+    var wifiApCount=a.wifi_ap_count||0;
+    var geoFix=a._geo||null;
     var uptime=fmtUptime(sys.uptime_seconds);
     /* os_caption só existe no Windows (WMI); em Linux/macOS cai para os_full ou nome+release */
     var osLabel=sys.os_caption||sys.os_full||[sys.os_name,sys.os_release].filter(Boolean).join(' ')||null;
@@ -634,11 +740,23 @@ body{padding-top:64px}
       +'<div class="info-section">'
       +'<div class="info-header">'+IC.globe+'<span class="info-title">Conectividade</span></div>'
       +'<div class="info-body">'
+      +'<div class="info-item"><span class="info-label">Estado</span>'
+      +'<span class="online-badge '+(isOnline?'on':'off')+'"><span class="led"></span>'+(isOnline?'Online':'Offline')+'</span></div>'
       +infoItem('IP principal',ipPrimary)
       +infoItem('MAC',macPrimary)
       +infoItem('Domínio',sys.domain)
       +infoItem('Usuário logado',sys.logged_user)
       +'</div>'
+      +'</div>'
+
+      +'<div class="info-section">'
+      +'<div class="info-header">'+IC.pin+'<span class="info-title">Localização</span>'
+      +(wpsEnabled?'<button class="geo-btn" id="geo-locate">Localizar por Wi-Fi</button>':'')
+      +'</div>'
+      +'<div class="info-body" id="geo-body">'
+      +'<p class="empty-text" id="geo-status">Carregando localização...</p>'
+      +'</div>'
+      +'<div class="geo-map" id="geo-map"></div>'
       +'</div>';
 
     /* ── Painel direito ── */
@@ -772,6 +890,9 @@ body{padding-top:64px}
       var q=e.target.value.toLowerCase().trim();
       renderSW(q?swData.filter(function(s){return (s.name||'').toLowerCase().indexOf(q)>-1;}):swData);
     });
+
+    /* ── Geolocalização (WPS preciso se disponível, senão IP) ── */
+    initGeo({fix:geoFix,ip:srcIp,wpsEnabled:wpsEnabled,apCount:wifiApCount});
   }
 
   /* ── Load ─────────────────────────────────────────────────── */

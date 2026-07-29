@@ -286,6 +286,106 @@ def collect_network():
 
 
 # ---------------------------------------------------------------------------
+# Coletor - Scan de Wi-Fi (BSSIDs) para geolocalizacao WPS
+# ---------------------------------------------------------------------------
+def _pct_to_dbm(pct):
+    """netsh/nmcli reportam sinal em %; a Geolocation API espera dBm.
+    Aproximacao usual: dBm = (pct/2) - 100."""
+    try:
+        return int(pct) // 2 - 100
+    except Exception:
+        return None
+
+
+def collect_wifi_scan():
+    """Lista os pontos de acesso Wi-Fi ao alcance (BSSID + sinal + canal).
+    Usado para posicionamento por Wi-Fi (WPS) no servidor. So le o ar; nao
+    conecta a nada. Retorna [] onde nao ha Wi-Fi ou ferramenta disponivel."""
+    aps = []
+
+    if IS_WINDOWS:
+        out = _safe(lambda: subprocess.check_output(
+            ["netsh", "wlan", "show", "networks", "mode=bssid"],
+            text=True, stderr=subprocess.DEVNULL, timeout=20))
+        if out:
+            cur = {}
+            for raw in out.splitlines():
+                line = raw.strip()
+                if line.lower().startswith("bssid"):
+                    if cur.get("bssid"):
+                        aps.append(cur); cur = {}
+                    cur["bssid"] = line.split(":", 1)[1].strip()
+                elif line.lower().startswith("signal"):
+                    pct = line.split(":", 1)[1].strip().replace("%", "")
+                    cur["signal_dbm"] = _pct_to_dbm(pct)
+                elif line.lower().startswith("channel"):
+                    try:
+                        cur["channel"] = int(line.split(":", 1)[1].strip())
+                    except Exception:
+                        pass
+            if cur.get("bssid"):
+                aps.append(cur)
+
+    elif IS_LINUX:
+        # nmcli e o mais portavel; SIGNAL vem em %
+        out = _safe(lambda: subprocess.check_output(
+            ["nmcli", "-t", "-f", "BSSID,SIGNAL,CHAN", "dev", "wifi"],
+            text=True, stderr=subprocess.DEVNULL, timeout=20))
+        if out:
+            for line in out.strip().splitlines():
+                # nmcli escapa os ':' do BSSID como '\:'
+                parts = line.replace("\\:", "%%").split(":")
+                if not parts or not parts[0]:
+                    continue
+                bssid = parts[0].replace("%%", ":")
+                ap = {"bssid": bssid}
+                if len(parts) > 1:
+                    ap["signal_dbm"] = _pct_to_dbm(parts[1])
+                if len(parts) > 2:
+                    try:
+                        ap["channel"] = int(parts[2])
+                    except Exception:
+                        pass
+                aps.append(ap)
+
+    elif IS_MAC:
+        # airport -s (removido em macOS recentes; best-effort). RSSI ja em dBm.
+        airport = ("/System/Library/PrivateFrameworks/Apple80211.framework/"
+                   "Versions/Current/Resources/airport")
+        out = _safe(lambda: subprocess.check_output(
+            [airport, "-s"], text=True, stderr=subprocess.DEVNULL, timeout=20))
+        if out:
+            for line in out.strip().splitlines()[1:]:
+                cols = line.split()
+                # SSID BSSID RSSI CHANNEL ...  -> BSSID costuma ter os ':'
+                for tok in cols:
+                    if tok.count(":") == 5:
+                        idx = cols.index(tok)
+                        ap = {"bssid": tok}
+                        try:
+                            ap["signal_dbm"] = int(cols[idx + 1])
+                        except Exception:
+                            pass
+                        aps.append(ap)
+                        break
+
+    # Filtra BSSIDs invalidos/localmente administrados (2o bit do 1o octeto)
+    clean = []
+    for ap in aps:
+        b = (ap.get("bssid") or "").strip().lower()
+        if len(b) != 17 or b == "00:00:00:00:00:00":
+            continue
+        try:
+            first = int(b.split(":")[0], 16)
+            if first & 0x02:  # localmente administrado -> ignora
+                continue
+        except Exception:
+            continue
+        clean.append(ap)
+    return clean
+
+
+# ---------------------------------------------------------------------------
 # Coletores - Software instalado
 # ---------------------------------------------------------------------------
 def _win_installed_software():
@@ -499,12 +599,13 @@ def build_payload(cfg: dict) -> dict:
     return {
         "asset_id": stable_asset_id(),
         "collected_at": _now_iso(),
-        "agent_version": "1.1.0",
+        "agent_version": "1.2.0",
         "tags": cfg.get("tags", {}),
         "system": _safe(collect_system, {}),
         "hardware": _safe(collect_hardware, {}),
         "storage": _safe(collect_storage_usage, []),
         "network": _safe(collect_network, {}),
+        "wifi_scan": _safe(collect_wifi_scan, []),
         "software": _safe(collect_software, []),
         "patches": _safe(collect_windows_patches, []),
         "devices": _safe(collect_connected_devices, {}),

@@ -10,14 +10,20 @@ Rodar:
     uvicorn server:app --host 0.0.0.0 --port 8000
 
 Config por variaveis de ambiente:
-    API_KEY   chave que o agente precisa enviar no header X-API-Key
-    DB_PATH   caminho do arquivo SQLite (padrao: inventario.db)
+    API_KEY                chave que o agente envia no header X-API-Key
+    DB_PATH                caminho do arquivo SQLite (padrao: inventario.db)
+    OFFLINE_AFTER_SECONDS  sem envios por esse tempo => ativo "offline".
+                           Padrao: 120s (24 batimentos perdidos do modo
+                           tempo-real de 5s). Se alguma maquina usar so o
+                           cron horario, suba para 7200.
 """
 
 import json
 import os
 import sqlite3
 import datetime as dt
+import urllib.request
+import urllib.error
 from contextlib import contextmanager
 import threading
 
@@ -27,9 +33,18 @@ from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, PlainTex
 API_KEY = os.environ.get("API_KEY", "troque-esta-chave-por-uma-forte")
 DB_PATH = os.environ.get("DB_PATH", os.path.join(os.path.dirname(__file__),
                                                  "inventario.db"))
+OFFLINE_AFTER_SECONDS = int(os.environ.get("OFFLINE_AFTER_SECONDS", "120"))
+
+# --- Geolocalizacao por Wi-Fi (WPS) ---------------------------------------
+# Desligado por padrao. Defina GEO_PROVIDER para ativar:
+#   "google"   -> usa Google Geolocation API (precisa de GEO_API_KEY)
+#   "beacondb" -> usa BeaconDB (gratuito/comunitario, cobertura irregular)
+GEO_PROVIDER = os.environ.get("GEO_PROVIDER", "").strip().lower()
+GEO_API_KEY = os.environ.get("GEO_API_KEY", "")
+
 DASHBOARD = os.path.join(os.path.dirname(__file__), "dashboard.html")
 
-app = FastAPI(title="Inventario de TI", version="1.1.0")
+app = FastAPI(title="Inventario de TI", version="1.2.0")
 
 
 # ---------------------------------------------------------------------------
@@ -81,6 +96,65 @@ def get_base_url(request: Request) -> str:
     return f"{proto}://{host}/"
 
 
+def client_ip_of(request: Request):
+    """IP de origem do envio. Atras de proxy/TLS (Caddy, Nginx, Railway),
+    o IP real do agente chega no X-Forwarded-For (primeiro da lista)."""
+    fwd = (request.headers.get("x-forwarded-for") or "").split(",")[0].strip()
+    if fwd:
+        return fwd
+    return request.client.host if request.client else None
+
+
+def geolocate_wifi(aps: list) -> dict | None:
+    """Converte uma lista de BSSIDs [{bssid, signal_dbm, channel}] em
+    {lat, lng, accuracy, provider} chamando o provedor configurado.
+    Retorna None se WPS estiver desligado, sem APs, ou em caso de falha."""
+    if not GEO_PROVIDER or not aps:
+        return None
+
+    wifi = []
+    for ap in aps:
+        b = ap.get("bssid")
+        if not b:
+            continue
+        entry = {"macAddress": b}
+        if ap.get("signal_dbm") is not None:
+            entry["signalStrength"] = ap["signal_dbm"]
+        if ap.get("channel") is not None:
+            entry["channel"] = ap["channel"]
+        wifi.append(entry)
+    if len(wifi) < 2:  # 1 unico AP raramente posiciona bem
+        return None
+
+    if GEO_PROVIDER == "google":
+        url = ("https://www.googleapis.com/geolocation/v1/geolocate?key="
+               + GEO_API_KEY)
+    elif GEO_PROVIDER == "beacondb":
+        url = "https://api.beacondb.net/v1/geolocate"
+    else:
+        return None
+
+    body = json.dumps({"considerIp": False, "wifiAccessPoints": wifi}).encode()
+    req = urllib.request.Request(
+        url, data=body, headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = json.loads(resp.read().decode())
+        loc = data.get("location") or {}
+        if loc.get("lat") is None:
+            return None
+        return {
+            "lat": loc.get("lat"),
+            "lng": loc.get("lng"),
+            "accuracy": data.get("accuracy"),
+            "provider": GEO_PROVIDER,
+            "located_at": now_iso(),
+            "ap_count": len(wifi),
+        }
+    except (urllib.error.URLError, urllib.error.HTTPError, ValueError, KeyError):
+        return None
+
+
 
 # ---------------------------------------------------------------------------
 # Ingestao
@@ -98,6 +172,7 @@ async def ingest(request: Request, x_api_key: str = Header(default="")):
     hostname = (payload.get("system") or {}).get("hostname")
     health = payload.get("health") or {}
     is_partial = payload.get("partial", False)
+    ingest_meta = {"source_ip": client_ip_of(request), "received_at": now_iso()}
 
     with db() as conn:
         if is_partial:
@@ -121,6 +196,9 @@ async def ingest(request: Request, x_api_key: str = Header(default="")):
                 payload_to_save = payload
         else:
             payload_to_save = payload
+
+        # Metadados de recepcao (IP de origem para geolocalizacao no dashboard)
+        payload_to_save["_ingest"] = ingest_meta
 
         conn.execute(
             """INSERT INTO assets (asset_id, hostname, last_seen, data)
@@ -146,14 +224,24 @@ async def ingest(request: Request, x_api_key: str = Header(default="")):
 # ---------------------------------------------------------------------------
 # Consulta
 # ---------------------------------------------------------------------------
-def _status_of(payload: dict, last_seen: str) -> str:
-    """Deriva o status geral do ativo: ok / atencao / critico / offline."""
+def _seconds_since(last_seen: str):
+    """Segundos desde o ultimo envio, ou None se a data for invalida."""
     try:
         seen = dt.datetime.fromisoformat(last_seen)
-        if (dt.datetime.now(dt.timezone.utc) - seen).total_seconds() > 86400:
-            return "offline"
+        return (dt.datetime.now(dt.timezone.utc) - seen).total_seconds()
     except Exception:
-        pass
+        return None
+
+
+def _is_online(last_seen: str) -> bool:
+    s = _seconds_since(last_seen)
+    return s is not None and s <= OFFLINE_AFTER_SECONDS
+
+
+def _status_of(payload: dict, last_seen: str) -> str:
+    """Deriva o status geral do ativo: ok / atencao / critico / offline."""
+    if not _is_online(last_seen):
+        return "offline"
     h = payload.get("health") or {}
     disk = h.get("disk_worst_percent") or 0
     mem = h.get("memory_percent") or 0
@@ -175,11 +263,15 @@ def list_assets():
             payload = json.loads(row["data"])
             sysinfo = payload.get("system") or {}
             health = payload.get("health") or {}
+            secs = _seconds_since(row["last_seen"])
             out.append({
                 "asset_id": row["asset_id"],
                 "hostname": row["hostname"],
                 "last_seen": row["last_seen"],
                 "status": _status_of(payload, row["last_seen"]),
+                "online": _is_online(row["last_seen"]),
+                "seconds_since_seen": round(secs) if secs is not None else None,
+                "source_ip": (payload.get("_ingest") or {}).get("source_ip"),
                 "os": sysinfo.get("os_caption") or sysinfo.get("os_full"),
                 "model": sysinfo.get("model"),
                 "manufacturer": sysinfo.get("manufacturer"),
@@ -203,15 +295,56 @@ def asset_detail(asset_id: str):
         if not row:
             raise HTTPException(status_code=404, detail="ativo nao encontrado")
         payload = json.loads(row["data"])
+        secs = _seconds_since(row["last_seen"])
         payload["hostname"] = row["hostname"]
         payload["last_seen"] = row["last_seen"]
         payload["status"] = _status_of(payload, row["last_seen"])
+        payload["online"] = _is_online(row["last_seen"])
+        payload["seconds_since_seen"] = round(secs) if secs is not None else None
+        payload["source_ip"] = (payload.get("_ingest") or {}).get("source_ip")
+        payload["wifi_ap_count"] = len(payload.get("wifi_scan") or [])
+        payload["wps_enabled"] = bool(GEO_PROVIDER)
+        # Nao devolve a lista bruta de BSSIDs ao frontend (dado sensivel);
+        # so a contagem e a ultima posicao ja calculada, se houver.
+        payload.pop("wifi_scan", None)
         hist = conn.execute(
             "SELECT ts, cpu, memory, disk FROM history "
             "WHERE asset_id=? ORDER BY ts DESC LIMIT 100",
             (asset_id,)).fetchall()
         payload["history"] = [dict(h) for h in reversed(hist)]
     return payload
+
+
+@app.post("/api/assets/{asset_id}/locate")
+def locate_asset(asset_id: str):
+    """Geolocaliza o ativo por Wi-Fi (WPS) sob demanda, usando os BSSIDs
+    do ultimo inventario. Requer GEO_PROVIDER configurado. Guarda o
+    resultado em _geo para exibicao no mapa."""
+    if not GEO_PROVIDER:
+        raise HTTPException(status_code=503,
+                            detail="WPS desligado. Defina GEO_PROVIDER no servidor.")
+    with db() as conn:
+        row = conn.execute(
+            "SELECT data FROM assets WHERE asset_id=?", (asset_id,)).fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="ativo nao encontrado")
+        payload = json.loads(row["data"])
+        aps = payload.get("wifi_scan") or []
+        if not aps:
+            raise HTTPException(
+                status_code=422,
+                detail="Sem redes Wi-Fi no ultimo inventario (maquina cabeada "
+                       "ou sem adaptador Wi-Fi).")
+        geo = geolocate_wifi(aps)
+        if not geo:
+            raise HTTPException(
+                status_code=502,
+                detail="Provedor nao retornou posicao (cobertura insuficiente "
+                       "ou falha na chamada).")
+        payload["_geo"] = geo
+        conn.execute("UPDATE assets SET data=? WHERE asset_id=?",
+                     (json.dumps(payload), asset_id))
+    return geo
 
 
 @app.get("/api/summary")
