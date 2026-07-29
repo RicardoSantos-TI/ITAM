@@ -7,5 +7,5 @@
     "setor": "",
     "responsavel": ""
   },
-  "verify_tls": true
+  "verify_tls": false
 }
