@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Console de Ativos · ITAM Martinelli</title>
-<meta name="description" content="Console de inventário e saúde de ativos de TI da Martinelli.">
+<title>Console de Ativos · Inventar.IO</title>
+<meta name="description" content="Console de inventário e saúde de ativos de TI · Inventar.IO.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
@@ -32,22 +32,25 @@
   :focus-visible{outline:2px solid var(--brand);outline-offset:2px}
   .mono{font-family:var(--mono)}
 
-  /* ── App bar ────────────────────────────────────────────── */
-  .appbar{background:var(--ink);color:#e8ecf3;position:sticky;top:0;z-index:50;border-bottom:1px solid var(--ink-line)}
-  .appbar-inner{max-width:1280px;margin:0 auto;padding:0 2rem;height:56px;display:flex;align-items:center;gap:1.75rem}
+  /* ── App bar (fixa, vidro) ──────────────────────────────── */
+  body{padding-top:64px}
+  .appbar{position:fixed;top:0;left:0;right:0;z-index:100;color:#e8ecf3;background:rgba(13,21,36,.88);-webkit-backdrop-filter:blur(16px) saturate(1.6);backdrop-filter:blur(16px) saturate(1.6);border-bottom:1px solid rgba(255,255,255,.07)}
+  .appbar::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:1px;background:linear-gradient(90deg,transparent 5%,rgba(110,168,255,.5),transparent 95%);pointer-events:none}
+  .appbar-inner{max-width:1280px;margin:0 auto;padding:0 2rem;height:64px;display:flex;align-items:center;gap:2rem}
   @media(max-width:768px){.appbar-inner{padding:0 1rem;gap:1rem}}
-  .brand{display:flex;align-items:center;gap:.65rem;text-decoration:none;color:inherit}
-  .brand-icon{width:30px;height:30px;background:var(--brand);border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.95rem;font-weight:800;flex:none}
-  .brand-name{font-size:.9rem;font-weight:700;letter-spacing:.01em}
-  .brand-name small{display:block;font-size:.64rem;font-weight:600;color:#8b97ab;text-transform:uppercase;letter-spacing:.09em;line-height:1.1}
-  .appbar-nav{display:flex;gap:.25rem;margin-left:.5rem}
-  .appbar-nav a{padding:.4rem .8rem;border-radius:var(--r-md);font-size:.82rem;font-weight:600;color:#aeb9ca;text-decoration:none;transition:color var(--t),background var(--t)}
-  .appbar-nav a:hover{color:#fff;background:var(--ink-2)}
-  .appbar-nav a.active{color:#fff;background:var(--ink-2)}
-  .appbar-live{margin-left:auto;display:flex;align-items:center;gap:.45rem;font-size:.74rem;font-weight:600;color:#9fe3b8;white-space:nowrap}
-  .live-dot{width:7px;height:7px;background:#3ccb72;border-radius:50%;animation:live 1.8s infinite}
+  .brand{display:flex;align-items:center;gap:.7rem;text-decoration:none;color:inherit}
+  .brand-icon{width:34px;height:34px;border-radius:10px;flex:none;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#3b82f6,#1c62cb 55%,#7c5cff);box-shadow:0 4px 14px rgba(28,98,203,.45),inset 0 1px 0 rgba(255,255,255,.28);color:#fff}
+  .brand-name{font-size:.98rem;font-weight:800;letter-spacing:-.01em;line-height:1.15}
+  .brand-name .io{font-family:var(--mono);font-weight:700;color:#6ea8ff}
+  .brand-name small{display:block;font-size:.6rem;font-weight:600;color:#8b97ab;text-transform:uppercase;letter-spacing:.14em}
+  .appbar-nav{display:flex;gap:.25rem;padding:.28rem;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:99px}
+  .appbar-nav a{padding:.42rem 1rem;border-radius:99px;font-size:.8rem;font-weight:600;color:#aeb9ca;text-decoration:none;transition:color var(--t),background var(--t)}
+  .appbar-nav a:hover{color:#fff}
+  .appbar-nav a.active{color:#fff;background:rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+  .appbar-live{margin-left:auto;display:flex;align-items:center;gap:.5rem;padding:.35rem .85rem;border-radius:99px;background:rgba(60,203,114,.1);border:1px solid rgba(60,203,114,.25);font-size:.72rem;font-weight:600;color:#9fe3b8;white-space:nowrap}
+  .live-dot{width:7px;height:7px;background:#3ccb72;border-radius:50%;box-shadow:0 0 8px #3ccb72;animation:live 1.8s infinite}
   @keyframes live{0%,100%{opacity:.45}50%{opacity:1}}
-  @media(max-width:560px){.appbar-live span{display:none}}
+  @media(max-width:560px){.appbar-live span+span{display:none}}
 
   /* ── Page ───────────────────────────────────────────────── */
   .page{max-width:1280px;margin:0 auto;padding:2rem 2rem 5rem}
@@ -151,8 +154,10 @@
 <header class="appbar">
   <div class="appbar-inner">
     <a class="brand" href="/">
-      <div class="brand-icon">M</div>
-      <div class="brand-name">Martinelli<small>Gestão de ativos</small></div>
+      <div class="brand-icon">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></svg>
+      </div>
+      <div class="brand-name">Inventar<span class="io">.IO</span><small>Gestão de ativos</small></div>
     </a>
     <nav class="appbar-nav">
       <a href="/" class="active">Console</a>
