@@ -107,6 +107,26 @@
   .dot-ok{background:var(--ok)}.dot-warn{background:var(--warn)}.dot-error{background:var(--crit)}.dot-offline{background:var(--text-dis)}.dot-total{background:var(--brand)}
   .filter-btn.active .dot-offline{background:#8b97ab}
 
+  /* ── View Toggle ────────────────────────────────────────── */
+  .view-btns{display:flex;gap:.25rem;background:var(--paper);border:1px solid var(--border);padding:.25rem;border-radius:var(--r-md);margin-left:auto}
+  .view-btn{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border:none;border-radius:var(--r-sm);background:transparent;color:var(--text-3);cursor:pointer;transition:color var(--t),background var(--t)}
+  .view-btn:hover{color:var(--text-1);background:var(--surface)}
+  .view-btn.active{color:var(--brand);background:var(--surface);box-shadow:var(--shadow)}
+  @media(max-width:768px){.view-btns{margin-left:0;width:100%;justify-content:center}}
+
+  /* ── Asset Table ────────────────────────────────────────── */
+  .table-responsive{width:100%;overflow-x:auto;border:1px solid var(--border-light);border-radius:var(--r-lg);background:var(--surface);margin-bottom:.5rem}
+  .asset-table{width:100%;border-collapse:collapse;text-align:left;font-size:.83rem}
+  .asset-table th{padding:.75rem 1rem;background:var(--paper);font-size:.68rem;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.07em;border-bottom:2px solid var(--border-light)}
+  .asset-table td{padding:.75rem 1rem;border-bottom:1px solid var(--border-light);color:var(--text-1);vertical-align:middle}
+  .asset-table tbody tr:hover{background:var(--brand-light)}
+  .asset-table tbody tr{cursor:pointer;transition:background var(--t)}
+  .asset-table .status-cell{display:flex;align-items:center;gap:.5rem;font-family:var(--mono);font-weight:700}
+  .asset-table .progress-mini{display:flex;align-items:center;gap:.5rem;min-width:100px}
+  .asset-table .progress-track{flex:1;height:5px;background:var(--paper);border:1px solid var(--border-light);border-radius:3px;overflow:hidden}
+  .asset-table .progress-fill{height:100%;border-radius:3px}
+  .asset-table .progress-val{font-family:var(--mono);font-size:.72rem;font-weight:600;min-width:28px;text-align:right}
+
   /* ── Asset grid ─────────────────────────────────────────── */
   .asset-grid{display:grid;gap:.8rem;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
   .asset-item{background:var(--surface);border:1px solid var(--border-light);border-left-width:3px;border-radius:var(--r-lg);padding:.95rem 1.05rem;cursor:pointer;transition:border-color var(--t),box-shadow var(--t)}
@@ -236,9 +256,35 @@
           <button class="filter-btn"        id="fb-critico" data-filter="critico"> <span class="dot dot-error"></span> Crítico</button>
           <button class="filter-btn"        id="fb-offline" data-filter="offline"> <span class="dot dot-offline"></span> Offline</button>
         </div>
+        <div class="view-btns">
+          <button class="view-btn" id="vb-grid" title="Visualização em Grade">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          </button>
+          <button class="view-btn" id="vb-table" title="Visualização em Tabela">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3" y2="6"/><line x1="3" y1="12" x2="3" y2="12"/><line x1="3" y1="18" x2="3" y2="18"/></svg>
+          </button>
+        </div>
         <span class="controls-meta" id="meta">carregando...</span>
       </div>
       <div class="asset-grid" id="grid"></div>
+      <div class="table-responsive" id="table-view-wrap" style="display:none">
+        <table class="asset-table">
+          <thead>
+            <tr>
+              <th>Ativo</th>
+              <th>Setor</th>
+              <th>Sistema Operacional</th>
+              <th>CPU</th>
+              <th>Memória</th>
+              <th>Disco</th>
+              <th>Usuário</th>
+              <th>Visto por último</th>
+              <th style="text-align: right">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
       <div class="empty-state" id="empty" style="display:none">
         <h2>Nenhum ativo cadastrado</h2>
         <p><a href="/instalar.html">Instale o agente</a> numa máquina e aponte-o para este servidor.</p>
@@ -259,6 +305,7 @@
   };
 
   var assets = [], activeFilter = 'all', searchQuery = '';
+  var viewMode = localStorage.getItem('itam_view_mode') || 'grid';
 
   function gc(v){
     if(v==null) return 'var(--text-dis)';
@@ -282,6 +329,14 @@
       +'<span class="gauge-val" style="color:'+c+'">'+(val==null?'—':Math.round(val)+'%')+'</span>'
       +'</div>';
   }
+  function gTableBar(val){
+    if(val==null) return '<span style="color:var(--text-dis)">—</span>';
+    var w=Math.min(100,val), c=gc(val);
+    return '<div class="progress-mini">'
+      +'<div class="progress-track"><div class="progress-fill" style="width:'+w+'%;background:'+c+'"></div></div>'
+      +'<span class="progress-val" style="color:'+c+'">'+Math.round(val)+'%</span>'
+      +'</div>';
+  }
 
   function renderKPIs(s){
     qs('#kpi-total').textContent   = s.total   || 0;
@@ -302,28 +357,70 @@
     var list=assets.filter(matches);
     qs('#asset-count').textContent=list.length;
     qs('#empty').style.display=assets.length===0?'block':'none';
-    qs('#grid').innerHTML=list.map(function(a){
-      var st=ST[a.status]||ST.ok;
-      return '<article class="asset-item status-'+a.status+'" data-id="'+a.asset_id+'">'
-        +'<div class="asset-top">'
-        +'<div class="asset-name"><span class="status-led '+st.led+'"></span>'+(a.hostname||'—')+'</div>'
-        +(a.tags&&a.tags.setor?'<span class="asset-tag '+st.tag+'">'+a.tags.setor+'</span>':'')
-        +'</div>'
-        +'<div class="asset-sub">'+(a.os||'Sistema desconhecido')+'</div>'
-        +'<div class="gauges">'+gH('CPU',a.cpu)+gH('RAM',a.memory)+gH('DISCO',a.disk)+'</div>'
-        +'<div class="asset-foot"><span class="asset-user">'+(a.user||'—')+'</span>'
-        +'<div style="display:flex;align-items:center;gap:.55rem">'
-        +'<span>visto '+ago(a.last_seen)+'</span>'
-        +'<a class="detail-link" href="ativo-detalhes.html?id='+a.asset_id+'" onclick="event.stopPropagation()">Detalhes &rarr;</a>'
-        +'</div></div>'
-        +'</article>';
-    }).join('');
 
-    qs('#grid').querySelectorAll('.asset-item').forEach(function(el){
-      el.addEventListener('click',function(){
-        window.location.href = 'ativo-detalhes.html?id=' + encodeURIComponent(el.dataset.id);
+    // Sincroniza botões ativos do toggle
+    document.querySelectorAll('.view-btn').forEach(function(b){ b.classList.remove('active'); });
+    var activeBtn = qs('#vb-' + viewMode);
+    if (activeBtn) activeBtn.classList.add('active');
+
+    if (viewMode === 'grid') {
+      qs('#grid').style.display='grid';
+      qs('#table-view-wrap').style.display='none';
+
+      qs('#grid').innerHTML=list.map(function(a){
+        var st=ST[a.status]||ST.ok;
+        return '<article class="asset-item status-'+a.status+'" data-id="'+a.asset_id+'">'
+          +'<div class="asset-top">'
+          +'<div class="asset-name"><span class="status-led '+st.led+'"></span>'+(a.hostname||'—')+'</div>'
+          +(a.tags&&a.tags.setor?'<span class="asset-tag '+st.tag+'">'+a.tags.setor+'</span>':'')
+          +'</div>'
+          +'<div class="asset-sub">'+(a.os||'Sistema desconhecido')+'</div>'
+          +'<div class="gauges">'+gH('CPU',a.cpu)+gH('RAM',a.memory)+gH('DISCO',a.disk)+'</div>'
+          +'<div class="asset-foot"><span class="asset-user">'+(a.user||'—')+'</span>'
+          +'<div style="display:flex;align-items:center;gap:.55rem">'
+          +'<span>visto '+ago(a.last_seen)+'</span>'
+          +'<a class="detail-link" href="ativo-detalhes.html?id='+a.asset_id+'" onclick="event.stopPropagation()">Detalhes &rarr;</a>'
+          +'</div></div>'
+          +'</article>';
+      }).join('');
+
+      qs('#grid').querySelectorAll('.asset-item').forEach(function(el){
+        el.addEventListener('click',function(){
+          window.location.href = 'ativo-detalhes.html?id=' + encodeURIComponent(el.dataset.id);
+        });
       });
-    });
+    } else {
+      qs('#grid').style.display='none';
+      qs('#table-view-wrap').style.display='block';
+
+      qs('#table-body').innerHTML=list.map(function(a){
+        var st=ST[a.status]||ST.ok;
+        return '<tr class="table-row" data-id="'+a.asset_id+'">'
+          +'<td><div class="status-cell"><span class="status-led '+st.led+'"></span>'+(a.hostname||'—')+'</div></td>'
+          +'<td>'+(a.tags&&a.tags.setor?'<span class="asset-tag '+st.tag+'">'+a.tags.setor+'</span>':'<span style="color:var(--text-dis)">—</span>')+'</td>'
+          +'<td style="color:var(--text-2)">'+(a.os||'Sistema desconhecido')+'</td>'
+          +'<td>'+gTableBar(a.cpu)+'</td>'
+          +'<td>'+gTableBar(a.memory)+'</td>'
+          +'<td>'+gTableBar(a.disk)+'</td>'
+          +'<td class="mono" style="font-size:.78rem">'+(a.user||'—')+'</td>'
+          +'<td style="color:var(--text-3);font-size:.78rem">visto '+ago(a.last_seen)+'</td>'
+          +'<td style="text-align: right">'
+          +'<a class="detail-link" style="opacity:1;pointer-events:auto" href="ativo-detalhes.html?id='+a.asset_id+'" onclick="event.stopPropagation()">Detalhes &rarr;</a>'
+          +'</td>'
+          +'</tr>';
+      }).join('') || '<tr><td colspan="9" style="text-align: center; color: var(--text-3); padding: 2rem;">Nenhum ativo encontrado.</td></tr>';
+
+      qs('#table-body').querySelectorAll('.table-row').forEach(function(el){
+        el.addEventListener('click',function(){
+          window.location.href = 'ativo-detalhes.html?id=' + encodeURIComponent(el.dataset.id);
+        });
+      });
+    }
+  }
+  function setViewMode(mode){
+    viewMode = mode;
+    localStorage.setItem('itam_view_mode', mode);
+    render();
   }
 
   function setFilter(f){
@@ -375,6 +472,8 @@
   document.querySelectorAll('.filter-btn, .kpi-card').forEach(function(btn){
     btn.addEventListener('click', function(){ setFilter(btn.dataset.filter); });
   });
+  qs('#vb-grid').addEventListener('click', function(){ setViewMode('grid'); });
+  qs('#vb-table').addEventListener('click', function(){ setViewMode('table'); });
 
   load();
   setInterval(load, 5000);
